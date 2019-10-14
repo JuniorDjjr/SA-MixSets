@@ -18,6 +18,7 @@
 #include <game_sa\common.h>
 #include "CMessages.h"
 #include "CCamera.h"
+#include "IMFX/Gunflashes.h"
 
 // Other
 #include "..\injector\assembly.hpp"
@@ -31,11 +32,11 @@ using namespace std;
 
 const unsigned int GET_SCRIPT_STRUCT_NAMED = 0x10AAA;
 
-
 // Global vars
 bool Read = false, forceUpdateQualityFuncs = true, bProcessOnceOnScripts = false, bProcessOnceAfterIntro = false,
-bPlayerRenderWeaponInVehicleLastFrame = false, bPlayerTwoRenderWeaponInVehicleLastFrame = false, bNoCLEO;
-int curQuality = -1, lastQuality = -1, G_NoVigilanteWanted_MaxWantedLevel = -1;
+bPlayerRenderWeaponInVehicleLastFrame = false, bPlayerTwoRenderWeaponInVehicleLastFrame = false, bNoCLEO = true,
+bOnEmergencyMissionLastFrame = false;
+int curQuality = -1, lastQuality = -1, G_NoEmergencyMisWanted_MaxWantedLevel = -1;
 fstream lg;
 languages lang;
 
@@ -43,8 +44,9 @@ languages lang;
 // External vars from ReadIni
 extern bool bEnabled, bReadOldINI, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIniFailed, bIMFX, bGunFuncs, G_NoStencilShadows,
 G_OpenedHouses, G_RandWheelDettach, G_TaxiLights, G_ParaLandingFix, G_NoGarageRadioChange, G_NoEmergencyMisWanted,
-G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle;
-extern int G_i, numOldCfgNotFound, G_ProcessPriority, G_FreezeWeather, G_FPSlimit, G_UseHighPedShadows, G_StreamMemory, G_Anisotropic;
+G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash;
+extern int G_i, numOldCfgNotFound, G_ProcessPriority, G_FreezeWeather, G_FPSlimit, G_UseHighPedShadows, G_StreamMemory,
+G_Anisotropic, G_HowManyMinsInDay;
 extern string G_ReloadCommand;
 extern float G_f;
 
@@ -57,13 +59,21 @@ public:
 	MixSets() {
 
 		lg.open("MixSets.log", fstream::out | fstream::trunc);
-		lg << "v4.0 final 1" << "\n";
+		lg << "v4 final 3" << "\n";
 		lg.flush();
 
 		bEnabled = false;
-		 
+
+		if (!ReadMemory<uint8_t>(0x400088, true) == 0xCA) {
+			lg << "ERROR: Game version not supported. Download GTA SA Crack 1.0 US (Hoodlum preferable)." << "\n\n";
+			lg.flush();
+			MessageBoxA(0, "Game version not supported. Download GTA SA Crack 1.0 US (Hoodlum preferable).", "MixSets", 0);
+			return;
+		}
+		
 		Events::initRwEvent += []
 		{
+
 			if (!GetModuleHandleA("CLEO.asi")) {
 				lg << "ERROR: CLEO isn't installed. It's required for some MixSets features." << "\n\n";
 				bNoCLEO = true;
@@ -84,9 +94,9 @@ public:
 
 			if (GetModuleHandleA("GunFuncs.asi")) {
 				lg << "GunFuncs = true" << "\n\n";
-				bIMFX = true;
+				bGunFuncs = true;
 			}
-			else bIMFX = false;
+			else bGunFuncs = false;
 
 			ReadIni_BeforeFirstFrame();
 
@@ -107,6 +117,7 @@ public:
 			bProcessOnceOnScripts = true;
 			bProcessOnceAfterIntro = true;
 		};
+
 
 		Events::processScriptsEvent.after += [] { // Note: gameProcessEvent doesn't work on SAMP
 
@@ -182,13 +193,15 @@ public:
 					}
 				}
 
-				curQuality = g_fx.GetFxQuality();
+				if (G_Fix2DGunflash) Gunflashes::ProcessPerFrame();
 
 				if (G_FreezeWeather >= 0 && !inSAMP)
 					CWeather::ForceWeatherNow(G_FreezeWeather);
 
 				if (G_ProcessPriority > 0)
 					ProcessPriority();
+
+				curQuality = g_fx.GetFxQuality();
 
 				if (curQuality != lastQuality || forceUpdateQualityFuncs) {
 					forceUpdateQualityFuncs = false;
@@ -205,7 +218,7 @@ public:
 				//////////////////////////////////////////////
 
 
-				if (G_OpenedHouses) {
+				if (G_OpenedHouses && !inSAMP) {
 					if (!CEntryExitManager::ms_bBurglaryHousesEnabled) {
 						CEntryExitManager::EnableBurglaryHouses(true);
 					}
@@ -213,6 +226,10 @@ public:
 
 				if (G_StreamMemory > 0) {
 					WriteMemory<uint32_t>(0x8A5A80, G_StreamMemory, false);
+				}
+
+				if (G_HowManyMinsInDay > 0 && !inSAMP) {
+					WriteMemory<uint32_t>(0xB7015C, G_HowManyMinsInDay, false);
 				}
 
 				if (G_RandWheelDettach) {
@@ -249,7 +266,7 @@ public:
 						if (test == 0x4C4C4146) { // default value: not yet fixed; valid script
 							/*
 								0812: AS_actor - 1 perform_animation "PARA_LAND" IFP "PARACHUTE" framedelta 10.0 loopA 0 lockX 1 lockY 1 lockF 0 time - 2
-								12 08 04 FF 0E 09 50 41 52 41 5F 4C 41 4E 44 0E 09 50 41 52 41 43 48 55 54 45 06 00 00 20 41 04 00 04 01 04 01 04 00 04 FE (NOP 33)
+								12 08 04 FF 0E 09 50 41 52 41 5F 4C 41 4E 44 0E 09 50 41 52 41 43 48 55 54 45 06 00 00 20 41 04 00 04 01 04 01 04 00 04 FE
 							*/
 							const uint8_t playanim[] = { 0x12, 0x08, 0x04, 0xFF, 0x0E, 0x09, 0x50, 0x41, 0x52, 0x41, 0x5F, 0x4C, 0x41, 0x4E, 0x44, 0x0E, 0x09, 0x50, 0x41, 0x52, 0x41, 0x43, 0x48, 0x55, 0x54, 0x45, 0x06, 0x00, 0x00, 0x20, 0x41, 0x04, 0x00, 0x04, 0x01, 0x04, 0x01, 0x04, 0x00, 0x04, 0xFE };
 							memcpy(offset, &playanim, sizeof(playanim));
@@ -286,16 +303,21 @@ public:
 					Command<GET_SCRIPT_STRUCT_NAMED>("FIRETRU", &script[2]);
 					if (script[0] || script[1] || script[2]) {
 						if (FindPlayerPed()->GetWantedLevel() == 0) {
-							if (G_NoVigilanteWanted_MaxWantedLevel == -1) {
-								G_NoVigilanteWanted_MaxWantedLevel = CWanted::MaximumWantedLevel;
+							if (G_NoEmergencyMisWanted_MaxWantedLevel == -1) {
+								G_NoEmergencyMisWanted_MaxWantedLevel = CWanted::MaximumWantedLevel;
 							}
 							CWanted::SetMaximumWantedLevel(0);
 						}
+						else {
+							if (bOnEmergencyMissionLastFrame) FindPlayerPed()->SetWantedLevel(0);
+						}
+						bOnEmergencyMissionLastFrame = true;
 					}
 					else {
-						if (G_NoVigilanteWanted_MaxWantedLevel != -1) {
-							CWanted::SetMaximumWantedLevel(G_NoVigilanteWanted_MaxWantedLevel);
-							G_NoVigilanteWanted_MaxWantedLevel = -1;
+						bOnEmergencyMissionLastFrame = false;
+						if (G_NoEmergencyMisWanted_MaxWantedLevel != -1) {
+							CWanted::SetMaximumWantedLevel(G_NoEmergencyMisWanted_MaxWantedLevel);
+							G_NoEmergencyMisWanted_MaxWantedLevel = -1;
 						}
 					}
 				}
@@ -347,10 +369,14 @@ public:
 					}
 					lg.flush();
 
+					bReloading = true;
+
 					ReadIni_BeforeFirstFrame();
 					ReadIni();
 					bProcessOnceOnScripts = true;
 					bProcessOnceAfterIntro = true;
+
+					bReloading = false;
 				}
 			}
 		};

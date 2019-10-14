@@ -12,6 +12,9 @@
 #include "CWeather.h"
 #include "CGame.h"
 #include "Fx_c.h"
+#include "CMirrors.h"
+#include "Fx_c.h"
+#include "IMFX/Gunflashes.h"
 #include <filesystem>
 
 using namespace plugin;
@@ -22,11 +25,11 @@ using namespace std;
 
 
 // Globals
-bool bEnabled, bReadOldINI, bParsePreserveComments, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIMFX, bGunFuncs, bIniFailed, G_NoDensities, G_FixBicycleImpact,
+bool bEnabled, bReadOldINI, bParsePreserveComments, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIMFX, bIMFXgunflash, bGunFuncs, bIniFailed, G_NoDensities, G_FixBicycleImpact,
 G_NoStencilShadows, G_OpenedHouses, G_RandWheelDettach, G_TaxiLights, G_ParaLandingFix, G_NoEmergencyMisWanted, G_NoGarageRadioChange,
-G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle;
+G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash;
 
-int G_i, G_FPSlimit, G_ProcessPriority, G_FreezeWeather, G_CameraPhotoQuality, G_UseHighPedShadows, G_StreamMemory, G_Anisotropic;
+int G_i, G_FPSlimit, G_ProcessPriority, G_FreezeWeather, G_CameraPhotoQuality, G_UseHighPedShadows, G_StreamMemory, G_Anisotropic, G_HowManyMinsInDay;
 
 float G_f, G_CullDistNormalComps, G_CullDistBigComps, G_VehLodDist, G_VehDrawDist, G_PedDrawDist, G_VehMultiPassDist, G_GangWaveMinSpawnDist,
 G_VehBulletDamage, G_VehFireDamage, G_VehExploDamage, G_HeliRotorSpeed, G_PedDensityExt, G_PedDensityInt, G_VehDensity,
@@ -38,12 +41,16 @@ G_HeliSensibility, G_PlaneTrailSegments, G_SkidHeight, G_SunSize, G_RhinoFireRan
 G_VehOccupDrawDist_Boat, G_BrakePower, G_BrakeMin, G_TireEff_DustLife, G_TireEff_DustFreq, G_TireEff_DustSize;
 float G_TireEff_DustUpForce, G_TireSmk_UpForce, G_PedWeaponDrawDist, G_PedWeaponDrawDist_Final, G_PropCollDist_NEG, G_PropCollDist_POS,
 G_MediumGrassDistMult, G_DistBloodpoolTex, G_RainGroundSplashNum, G_RainGroundSplashArea, G_RainGroundSplashArea_HALF, G_RoadblockSpawnDist,
-G_RoadblockSpawnDist_NEG, G_PedPopulationMult, G_VehPopulationMult, G_FxEmissionRateShare;
+G_RoadblockSpawnDist_NEG, G_PedPopulationMult, G_VehPopulationMult, G_FxEmissionRateShare, G_GunflashEmissionMult;
 float zero = 0.0;
+
+uintptr_t ORIGINAL_MirrorsCreateBuffer;
 
 int numOldCfgNotFound = 0;
 
-string G_NoMoneyZeros_Pos, G_NoMoneyZeros_Neg, G_ReloadCommand;
+string G_ReloadCommand;
+char G_NoMoneyZeros_Pos[] = "$%d";
+char G_NoMoneyZeros_Neg[] = "-$%d";
 
 CVehicle *secPlayerVehicle = nullptr;
 
@@ -318,6 +325,13 @@ void _declspec(naked) FixMouseStuck_ASM()
 	}
 }
 
+void ForceHighMirrorRes_MirrorsCreateBuffer() {
+	FxQuality_e qualityBackup = g_fx.GetFxQuality();
+	g_fx.SetFxQuality(FXQUALITY_VERY_HIGH);
+	((void(__cdecl *)())ORIGINAL_MirrorsCreateBuffer)();
+	g_fx.SetFxQuality(qualityBackup);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void asm_fmul(float f) {
@@ -365,6 +379,24 @@ void ReadIni() {
 		Call<0x7469A0>();
 	}
 
+	if (ReadIniBool(ini, &lg, "System", "SkipShutdown")) {
+		//MakeJMP(0x748E70, 0x748EE6, true); // jump all shutdown
+		//MakeJMP(0x8246F3, 0x824701, true);
+		//MakeJMP(0x824733, 0x824741, true);
+
+		MakeNOP(0x748E6B, 5, true); // CGame::Shutdown
+		MakeNOP(0x748E82, 5, true); // RsEventHandler rsRWTERMINATE
+		MakeNOP(0x748E75, 5, true); // CAudioEngine::Shutdown
+
+		//MakeNOP(0x748E9C, 5, true);
+		//MakeNOP(0x748EA6, 5, true);
+		//WriteMemory<uint8_t>(0x810C60, 0xC3, true);
+		
+		//WriteMemory<uint8_t>(0x801D50, 0xC3, true);
+
+		//MakeJMP(0x53C902, 0x53CAF1, true);
+	}
+	
 
 	// -- Graphics
 	if (ReadIniInt(ini, &lg, "Graphics", "MotionBlurAlpha", &i)) {
@@ -433,14 +465,42 @@ void ReadIni() {
 		MakeNOP(0x5E5F2A, 20, true);
 	}
 
-	if (ReadIniBool(ini, &lg, "Graphics", "Fix2DGunflash")) {
-		if (!bIMFX && !bGunFuncs)
-		{
-			injector::MakeInline<0x73F3A5, 0x73F3A5 + 6>([](injector::reg_pack& regs)
+	if (ReadIniFloat(ini, &lg, "Graphics", "GunflashEmissionMult", &f)) {
+		G_GunflashEmissionMult = f;
+	}
+	else G_GunflashEmissionMult = -1.0f;
+	
+	if (!bReloading && ReadIniBool(ini, &lg, "Graphics", "Fix2DGunflash")) {
+		if (bGunFuncs) {
+			if (lang == languages::PT)
+			{
+				lg << "Fix2DGunflash desativado pois você já está usando a correção de efeito de tiro do GunFuncs." << "\n";
+			}
+			else {
+				lg << "Fix2DGunflash disabled because you are already using gunflash GunFuncs fix." << "\n";
+			}
+			G_Fix2DGunflash = false;
+		}
+		else if (bIMFX && ReadMemory<uint8_t>(0x73306D, true) == 0x90) {
+			if (lang == languages::PT)
+			{
+				lg << "Fix2DGunflash desativado pois você já está usando a correção de efeito de tiro do IMFX." << "\n";
+			}
+			else {
+				lg << "Fix2DGunflash disabled because you are already using gunflash IMFX fix." << "\n";
+			}
+			G_Fix2DGunflash = false;
+		}
+		else {
+			G_Fix2DGunflash = true;
+			Gunflashes::Setup();
+			Events::pedRenderEvent.before += Gunflashes::CreateGunflashEffectsForPed;
+			/*injector::MakeInline<0x73F3A5, 0x73F3A5 + 6>([](injector::reg_pack& regs)
 			{
 				//mov     eax, [esi+460h]
 				regs.eax = *(uint32_t*)(regs.esi + 0x460);
 
+				// TESTS
 				CVehicle *vehicle = (CVehicle *)regs.esi;
 				CWeapon *weapon = *(CWeapon **)(regs.esp + 0x28);
 				CVector *pointIn = (CVector *)(regs.esp + 0x2C);
@@ -450,8 +510,8 @@ void ReadIni() {
 				CVector *gunshellPos;
 				CVector gunshellDir;
 
-				showintlog(weapon->m_nType);
-				show3dlog(pointIn->x, 0.0, 0.0);
+				//showintlog(weapon->m_nType);
+				//show3dlog(pointIn->x, 0.0, 0.0);
 
 				float posOffset;
 				float gunshellSize;
@@ -487,17 +547,17 @@ void ReadIni() {
 						gunshellSize = 0x3E800000;
 					LABEL_149:
 						g_fx.TriggerGunshot(vehicle, *pointIn, *pointOut, true);
-						g_fx.TriggerGunshot(vehicle, *pointOut, *pointIn, true);
 					}
 					break;
 				default:
 					break;
 				}
 			});
+			*/
 		}
-		else {
-			lg << "Fix2DGunflash disabled because it isn't required\n";
-		}
+	}
+	else {
+		G_Fix2DGunflash = false;
 	}
 	
 	
@@ -888,9 +948,22 @@ void ReadIni() {
 			});
 		}
 
-		if (ReadIniFloat(ini, &lg, "Gameplay", "BrakePower", &f)) {
+		if (ReadIniFloat(ini, &lg, "Gameplay", "VehFireDamage", &f)) {
+			G_VehFireDamage = f;
+			WriteMemory<float*>(0x53A6B7 + 2, &G_VehFireDamage, true);
+		}
+
+		if (ReadIniBool(ini, &lg, "Gameplay", "NoTutorials")) {
+			WriteMemory<uint8_t>(0xC0BC15, 1, true);
+			G_NoTutorials = true;
+		}
+		else G_NoTutorials = false;
+	}
+
+	if (ReadIniFloat(ini, &lg, "Gameplay", "BrakePower", &f)) {
+		if (!inSAMP || f < 1.0f) {
 			G_BrakePower = f;
-			if (ReadIniFloat(ini, &lg, "Gameplay", "BrakeMin", &f)) {
+			if (!inSAMP && ReadIniFloat(ini, &lg, "Gameplay", "BrakeMin", &f)) {
 				G_BrakeMin = f / 100.0f;
 			}
 			else {
@@ -906,17 +979,6 @@ void ReadIni() {
 				asm_fmul(brakeDeceleration);
 			});
 		}
-
-		if (ReadIniFloat(ini, &lg, "Gameplay", "VehFireDamage", &f)) {
-			G_VehFireDamage = f;
-			WriteMemory<float*>(0x53A6B7 + 2, &G_VehFireDamage, true);
-		}
-
-		if (ReadIniBool(ini, &lg, "Gameplay", "NoTutorials")) {
-			WriteMemory<uint8_t>(0xC0BC15, 1, true);
-			G_NoTutorials = true;
-		}
-		else G_NoTutorials = false;
 	}
 
 	if (ReadIniBool(ini, &lg, "Gameplay", "NoSteerSpeedLimit")) {
@@ -949,7 +1011,8 @@ void ReadIni() {
 		WriteMemory<uint32_t>(0x630D75, i, true);
 	}
 
-	if (!inSAMP && ReadIniFloat(ini, &lg, "Gameplay", "VehElevatorSpeed", &f)) {
+	if (ReadIniFloat(ini, &lg, "Gameplay", "VehElevatorSpeed", &f)) {
+		if (inSAMP && f > 10.0f) f = 10.0f;
 		WriteMemory<float>(0x871008, f, false);
 	}
 
@@ -958,11 +1021,13 @@ void ReadIni() {
 		MakeNOP(0x6B568A, 6, true);
 	}
 
-	if (!inSAMP && ReadIniFloat(ini, &lg, "Gameplay", "WheelTurnSpeed", &f)) {
+	if (ReadIniFloat(ini, &lg, "Gameplay", "WheelTurnSpeed", &f)) {
+		if (inSAMP && f > 0.2) f = 0.2;
 		WriteMemory<float>(0x871058, f, false);
 	}
 
-	if (!inSAMP && ReadIniFloat(ini, &lg, "Gameplay", "HeliSensibility", &f)) {
+	if (ReadIniFloat(ini, &lg, "Gameplay", "HeliSensibility", &f)) {
+		if (inSAMP && f > 0.00392f) f = 0.00392f;
 		G_HeliSensibility = f;
 		WriteMemory<float*>(0x6C4867 + 2, &G_HeliSensibility, true);
 	}
@@ -1343,6 +1408,11 @@ void ReadIni() {
 				WriteMemory<float*>(0x6F7AA8, &G_TrainSpawnDistance, true);
 			}
 		}
+		else {
+			G_VehDensity = -1.0f;
+			G_PedDensityExt = -1.0f;
+			G_PedDensityInt = -1.0f;
+		}
 
 		if ((!inSAMP || (inSAMP && dtSAMP)) && ReadIniFloat(ini, &lg, "Densities", "MinGrassDist", &f)) {
 			WriteMemory<float>(0x5DDB42 + 1, f, true);
@@ -1610,10 +1680,8 @@ void ReadIni() {
 		WriteMemory<uint8_t>(0x559760, 0xC3, true);
 	}
 	if (ReadIniBool(ini, &lg, "Interface", "NoMoneyZeros")) {
-		G_NoMoneyZeros_Pos = "$%d";
-		WriteMemory<string*>(0x58F4C8, &G_NoMoneyZeros_Pos, true); //positive
-		G_NoMoneyZeros_Neg = "-$%d";
-		WriteMemory<string*>(0x58F50A, &G_NoMoneyZeros_Neg, true); //negative
+		WriteMemory<char*>(0x58F4C8, G_NoMoneyZeros_Pos, true); //positive
+		WriteMemory<char*>(0x58F50A, G_NoMoneyZeros_Neg, true); //negative
 	}
 	if ((!inSAMP || (inSAMP && rpSAMP)) && ReadIniBool(ini, &lg, "Interface", "NoTargetBlip")) {
 		WriteMemory<uint8_t>(0x53E1EC, 0xEB, true);
@@ -1639,9 +1707,10 @@ void ReadIni() {
 
 	
 
-
-	// -- Wanted
 	if (!inSAMP) {
+
+		// -- Wanted
+
 		/*if (ReadIniInt(ini, &lg, "Wanted", "RoadBlockVeh_4", &i)) {
 			WriteMemory<uint32_t>(0x461BE7, i, true);
 		}
@@ -1720,14 +1789,6 @@ void ReadIni() {
 			WriteMemory<float>(0x863984, f, false);
 		}
 
-		if (ReadIniInt(ini, &lg, "World", "HowManyMinsInDay", &i)) {
-			i *= 41.666666667f;
-			WriteMemory<uint32_t>(0xB7015C, i, false);
-			WriteMemory<uint32_t>(0x5BA35F, i, true);
-			WriteMemory<uint32_t>(0x5BA35F, i, true);
-			WriteMemory<uint32_t>(0x53BDEC, i, true);
-		}
-
 		if (ReadIniInt(ini, &lg, "World", "FreezeWeather", &i)) {
 			G_FreezeWeather = i;
 		}
@@ -1741,6 +1802,9 @@ void ReadIni() {
 		if (ReadIniBool(ini, &lg, "World", "NoWaterPhysics")) {
 			WriteMemory<uint8_t>(0x6C2759, 1, true);
 		}
+	}
+	else {
+		G_FreezeWeather = -1;
 	}
 
 	// -- Post
@@ -1888,7 +1952,6 @@ void ReadIni_BeforeFirstFrame() {
 		MakeNOP(0x745423, 8, true);
 		MakeJMP(0x745423, FixMouseStuck_ASM, true);
 	}
-	
 
 	// -- Graphics
 	if (ReadIniBool(ini, &lg, "Graphics", "DisplayDialogAnyAR")) {
@@ -1904,6 +1967,12 @@ void ReadIni_BeforeFirstFrame() {
 		MakeCALL(0x730F9F, CustomMaxAnisotropic, true);
 	}
 
+	if (!bReloading && ReadIniInt(ini, &lg, "Graphics", "ForceHighMirrorRes", &i)) {
+		ORIGINAL_MirrorsCreateBuffer = ReadMemory<uintptr_t>(0x72701D + 1, true);
+		ORIGINAL_MirrorsCreateBuffer += (GetGlobalAddress(0x72701D) + 5);
+		MakeCALL(0x72701D, ForceHighMirrorRes_MirrorsCreateBuffer, true);
+	}
+	
 	if (ReadIniBool(ini, &lg, "Graphics", "FxEmissionRateShare")) {
 		G_FxEmissionRateShare = true;
 	}
@@ -1911,9 +1980,9 @@ void ReadIni_BeforeFirstFrame() {
 
 	if (ReadIniFloat(ini, &lg, "Graphics", "FxEmissionRateMult", &f)) {
 		if (G_FxEmissionRateShare) {
-			WriteMemory<float>(0x4A97B0 + 1, (0.5f * f), true);
-			WriteMemory<float>(0x4A97C6 + 1, (0.5f * f), true);
-			WriteMemory<float>(0x4A97DC + 1, (0.5f * f), true);
+			WriteMemory<float>(0x4A97B0 + 1, f, true);
+			WriteMemory<float>(0x4A97C6 + 1, f, true);
+			WriteMemory<float>(0x4A97DC + 1, f, true);
 		}
 		else {
 			WriteMemory<float>(0x4A97B0 + 1, (0.5f * f), true);
@@ -1923,9 +1992,9 @@ void ReadIni_BeforeFirstFrame() {
 	}
 	else {
 		if (G_FxEmissionRateShare) {
-			WriteMemory<float>(0x4A97B0 + 1, 0.5f, true);
-			WriteMemory<float>(0x4A97C6 + 1, 0.5f, true);
-			WriteMemory<float>(0x4A97DC + 1, 0.5f, true);
+			WriteMemory<float>(0x4A97B0 + 1, 0.75f, true);
+			WriteMemory<float>(0x4A97C6 + 1, 0.75f, true);
+			WriteMemory<float>(0x4A97DC + 1, 0.75f, true);
 		}
 	}
 
@@ -1959,6 +2028,16 @@ void ReadIni_BeforeFirstFrame() {
 			});
 		}
 		else G_VehPopulationMult = 1.0f;
+	}
+
+
+	// -- World
+	if (ReadIniInt(ini, &lg, "World", "HowManyMinsInDay", &i)) {
+		i *= 41.666666667f;
+		G_HowManyMinsInDay = i;
+		//WriteMemory<uint32_t>(0xB7015C, i, false); // on MixSets.cpp
+		WriteMemory<uint32_t>(0x5BA35F, i, true);
+		WriteMemory<uint32_t>(0x53BDEC, i, true);
 	}
 
 
