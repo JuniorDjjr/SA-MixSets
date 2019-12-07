@@ -16,6 +16,7 @@
 #include "Fx_c.h"
 #include "IMFX/Gunflashes.h"
 #include <filesystem>
+#include "CMenuManager.h"
 
 using namespace plugin;
 using namespace injector;
@@ -387,6 +388,12 @@ void ReadIni() {
 		MakeNOP(0x748E6B, 5, true); // CGame::Shutdown
 		MakeNOP(0x748E82, 5, true); // RsEventHandler rsRWTERMINATE
 		MakeNOP(0x748E75, 5, true); // CAudioEngine::Shutdown
+
+		injector::MakeInline<0x748EDF, 0x748EDF + 7>([](injector::reg_pack& regs)
+		{
+			SetErrorMode(0);
+			_Exit(0); // exits faster https://www.geeksforgeeks.org/exit-vs-_exit-c-cpp/
+		});
 
 		//MakeNOP(0x748E9C, 5, true);
 		//MakeNOP(0x748EA6, 5, true);
@@ -1166,10 +1173,9 @@ void ReadIni() {
 			CAEVehicleAudioEntity *audioEntity = (CAEVehicleAudioEntity *)regs.ecx;
 			CVehicle *veh = (CVehicle *)regs.edi;
 
-			audioEntity->m_bInhibitAccForLowSpeed = false;
-
 			if (CWorld::Players[1].m_pPed && veh->m_pDriver == CWorld::Players[1].m_pPed) {
 				CAEVehicleAudioEntity::s_pPlayerDriver = CWorld::Players[1].m_pPed;
+				audioEntity->m_bInhibitAccForLowSpeed = false;
 			}
 			else {
 				if (CWorld::Players[0].m_pPed && veh->m_pDriver == CWorld::Players[0].m_pPed) {
@@ -1952,6 +1958,8 @@ void ReadIni_BeforeFirstFrame() {
 		MakeNOP(0x745423, 8, true);
 		MakeJMP(0x745423, FixMouseStuck_ASM, true);
 	}
+	
+
 
 	// -- Graphics
 	if (ReadIniBool(ini, &lg, "Graphics", "DisplayDialogAnyAR")) {

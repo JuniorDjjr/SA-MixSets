@@ -3,10 +3,16 @@
   <ItemGroup>
     <ClCompile Include="MixSets.cpp" />
     <ClCompile Include="ReadIni.cpp" />
+    <ClCompile Include="IMFX\Gunflashes.cpp">
+      <Filter>IMFX</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="IniReader">
       <UniqueIdentifier>{61c0165f-3c9c-4a26-b1e1-772c0c635dee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IMFX">
+      <UniqueIdentifier>{e3d921be-c57d-4501-bd4c-8e6628f2b80e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -20,6 +26,12 @@
     <ClInclude Include="Common.h" />
     <ClInclude Include="MixSets.h" />
     <ClInclude Include="TestCheat.h" />
+    <ClInclude Include="IMFX\Gunflashes.h">
+      <Filter>IMFX</Filter>
+    </ClInclude>
+    <ClInclude Include="IMFX\imfx.h">
+      <Filter>IMFX</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="_.txt" />

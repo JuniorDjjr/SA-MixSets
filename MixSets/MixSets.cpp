@@ -59,7 +59,7 @@ public:
 	MixSets() {
 
 		lg.open("MixSets.log", fstream::out | fstream::trunc);
-		lg << "v4 final 3" << "\n";
+		lg << "v4 final 6" << "\n";
 		lg.flush();
 
 		bEnabled = false;
@@ -119,7 +119,7 @@ public:
 		};
 
 
-		Events::processScriptsEvent.after += [] { // Note: gameProcessEvent doesn't work on SAMP
+		Events::processScriptsEvent.before += [] { // Note: gameProcessEvent doesn't work on SAMP
 
 			if (bEnabled) {
 

@@ -1,0 +1,7 @@
+Adicionado SkipShutdown: Corrige mensagens de erro (crash) ao fechar o jogo. Simples assim.
+Adicionado ForceHighMirrorRes: Forçar o uso de espelhos em alta definição mesmo nos gráficos baixos.
+Alterado Fix2DGunflash: Agora usa o mesmo sistema do IMFX (mas corrigido um bug de posição duplicada). Isto quer dizer que todos os problemas de efeitos de tiro foram corrigidos. Por exemplo, agora o efeito segue a direção da arma.
+Corrigido HowManyMinsInDay: Não estava funcionando em Load game (Carregar jogo).
+Corrigido NoEmergencyMisWanted: Só estava funcionando em alguns casos. Agora é forçado (não vai ganhar nível de perseguição nunca, nem se usar cheat).
+Corrigido NoMoneyZeros: Havia um problema que fazia aparecer caracteres aleatórios na frente do dinheiro no hud.
+Alterado WheelTurnSpeed, BrakePower, HeliSensibility e VehElevatorSpeed: Agora são ativados no SAMP, mas somente caso o valor configurado seja abaixo do padrão (para não ser considerado cheating).
