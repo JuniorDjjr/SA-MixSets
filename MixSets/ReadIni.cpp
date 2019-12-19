@@ -42,7 +42,7 @@ G_HeliSensibility, G_PlaneTrailSegments, G_SkidHeight, G_SunSize, G_RhinoFireRan
 G_VehOccupDrawDist_Boat, G_BrakePower, G_BrakeMin, G_TireEff_DustLife, G_TireEff_DustFreq, G_TireEff_DustSize;
 float G_TireEff_DustUpForce, G_TireSmk_UpForce, G_PedWeaponDrawDist, G_PedWeaponDrawDist_Final, G_PropCollDist_NEG, G_PropCollDist_POS,
 G_MediumGrassDistMult, G_DistBloodpoolTex, G_RainGroundSplashNum, G_RainGroundSplashArea, G_RainGroundSplashArea_HALF, G_RoadblockSpawnDist,
-G_RoadblockSpawnDist_NEG, G_PedPopulationMult, G_VehPopulationMult, G_FxEmissionRateShare, G_GunflashEmissionMult;
+G_RoadblockSpawnDist_NEG, G_PedPopulationMult, G_VehPopulationMult, G_FxEmissionRateShare, G_GunflashEmissionMult, G_VehCamHeightOffset;
 float zero = 0.0;
 
 uintptr_t ORIGINAL_MirrorsCreateBuffer;
@@ -635,6 +635,18 @@ void ReadIni() {
 	if (ReadIniFloat(ini, &lg, "Graphics", "SunSize", &f)) {
 		G_SunSize = f;
 		WriteMemory<float*>(0x6FC6EA, &G_SunSize, true);
+	}
+
+	if (ReadIniBool(ini, &lg, "Graphics", "SunBlockedByVehicles")) {
+		WriteMemory<bool>(0x6FAC5C, true, true);
+	}
+
+	if (ReadIniBool(ini, &lg, "Graphics", "SunBlockedByPeds")) {
+		WriteMemory<bool>(0x6FAC53, true, true);
+	}
+
+	if (ReadIniBool(ini, &lg, "Graphics", "SunBlockedByObjects")) {
+		WriteMemory<bool>(0x6FAC51, true, true);
 	}
 
 	if (ReadIniFloat(ini, &lg, "Graphics", "VehSparkSpread", &f)) {
@@ -1254,7 +1266,15 @@ void ReadIni() {
 	if (ReadIniBool(ini, &lg, "Gameplay", "NoPedVehHandsUp")) {
 		WriteMemory<uint32_t>(0x4C1175, 0, true);
 	}
-	
+
+	if (!inSAMP && ReadIniFloat(ini, &lg, "Gameplay", "VehCamHeightOffset", &f)) {
+		G_VehCamHeightOffset = f;
+		injector::MakeInline<0x524776, 0x524776 + 6>([](injector::reg_pack& regs)
+		{
+			regs.ecx = *(uint32_t*)(regs.edi + 0x4C8); //original code mov ecx, [edi+4C8h]
+			*(float*)(regs.esp + 0x78 - 0x60) += G_VehCamHeightOffset;
+		});
+	}
 
 
 

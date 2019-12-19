@@ -59,7 +59,7 @@ public:
 	MixSets() {
 
 		lg.open("MixSets.log", fstream::out | fstream::trunc);
-		lg << "v4 final 6" << "\n";
+		lg << "v4.0.1" << "\n";
 		lg.flush();
 
 		bEnabled = false;
@@ -73,7 +73,6 @@ public:
 		
 		Events::initRwEvent += []
 		{
-
 			if (!GetModuleHandleA("CLEO.asi")) {
 				lg << "ERROR: CLEO isn't installed. It's required for some MixSets features." << "\n\n";
 				bNoCLEO = true;
