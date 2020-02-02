@@ -42,7 +42,7 @@ languages lang;
 
 
 // External vars from ReadIni
-extern bool bEnabled, bReadOldINI, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIniFailed, bIMFX, bGunFuncs, G_NoStencilShadows,
+extern bool bEnabled, bReadOldINI, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIniFailed, bVersionFailed, bIMFX, bGunFuncs, bOLA, G_NoStencilShadows,
 G_OpenedHouses, G_RandWheelDettach, G_TaxiLights, G_ParaLandingFix, G_NoGarageRadioChange, G_NoEmergencyMisWanted,
 G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash;
 extern int G_i, numOldCfgNotFound, G_ProcessPriority, G_FreezeWeather, G_FPSlimit, G_UseHighPedShadows, G_StreamMemory,
@@ -59,8 +59,9 @@ public:
 	MixSets() {
 
 		lg.open("MixSets.log", fstream::out | fstream::trunc);
-		lg << "v4.0.1" << "\n";
+		lg << "v4.0.2" << "\n";
 		lg.flush();
+
 
 		bEnabled = false;
 
@@ -96,6 +97,12 @@ public:
 				bGunFuncs = true;
 			}
 			else bGunFuncs = false;
+
+			if (GetModuleHandleA("III.VC.SA.LimitAdjuster.asi")) {
+				lg << "Open Limit Adjuster = true" << "\n\n";
+				bOLA = true;
+			}
+			else bOLA = false;
 
 			ReadIni_BeforeFirstFrame();
 
@@ -422,34 +429,42 @@ public:
 			CMessages::AddMessageJumpQ("~r~ERROR: MixSets.ini not found - MixSets.ini nao encontrado", 6000, false, false);
 		}
 		else {
-			if (bReadOldINI) {
-				if (bErrorRename) {
-					if (lang == languages::PT)
-						CMessages::AddMessageJumpQ("~r~As configuracoes do 'MixSets old.ini' foram movidas, mas houve um erro ao renomea-lo. Leia o 'MixSets.log'.", 10000, false, false);
-					else
-						CMessages::AddMessageJumpQ("~r~The 'MixSets old.ini' settings was moved, but there is an error when renaming it. Read the 'MixSets.log'.", 10000, false, false);
-				}
-				else {
-					if (numOldCfgNotFound > 0) {
-						if (numOldCfgNotFound > 1)
-						{
-							if (lang == languages::PT)
-								CMessages::AddMessageJumpQWithNumber("~y~As configuracoes do 'MixSets old.ini' foram movidas. Ha ~1~ avisos, leia o 'MixSets.log'.", 8000, false, numOldCfgNotFound, 0, 0, 0, 0, 0, false);
-							else
-								CMessages::AddMessageJumpQWithNumber("~y~The 'MixSets old.ini' settings was moved. There is ~1~ warnings, read the 'MixSets.log'.", 8000, false, numOldCfgNotFound, 0, 0, 0, 0, 0, false);
+			if (bVersionFailed) {
+				if (lang == languages::PT)
+					CMessages::AddMessageJumpQ("~r~MixSets: O executavel do seu jogo nao e compativel. Use Crack 1.0 US Hoodlum ou Compact.", 10000, false, false);
+				else
+					CMessages::AddMessageJumpQ("~r~MixSets: Your game executable isn't compatible. Use Crack 1.0 US Hoodlum or Compact.", 10000, false, false);
+			}
+			else {
+				if (bReadOldINI) {
+					if (bErrorRename) {
+						if (lang == languages::PT)
+							CMessages::AddMessageJumpQ("~r~As configuracoes do 'MixSets old.ini' foram movidas, mas houve um erro ao renomea-lo. Leia o 'MixSets.log'.", 10000, false, false);
+						else
+							CMessages::AddMessageJumpQ("~r~The 'MixSets old.ini' settings was moved, but there is an error when renaming it. Read the 'MixSets.log'.", 10000, false, false);
+					}
+					else {
+						if (numOldCfgNotFound > 0) {
+							if (numOldCfgNotFound > 1)
+							{
+								if (lang == languages::PT)
+									CMessages::AddMessageJumpQWithNumber("~y~As configuracoes do 'MixSets old.ini' foram movidas. Ha ~1~ avisos, leia o 'MixSets.log'.", 8000, false, numOldCfgNotFound, 0, 0, 0, 0, 0, false);
+								else
+									CMessages::AddMessageJumpQWithNumber("~y~The 'MixSets old.ini' settings was moved. There is ~1~ warnings, read the 'MixSets.log'.", 8000, false, numOldCfgNotFound, 0, 0, 0, 0, 0, false);
+							}
+							else {
+								if (lang == languages::PT)
+									CMessages::AddMessageJumpQWithNumber("~y~As configuracoes do 'MixSets old.ini' foram movidas. Ha ~1~ aviso, leia o 'MixSets.log'.", 8000, false, numOldCfgNotFound, 0, 0, 0, 0, 0, false);
+								else
+									CMessages::AddMessageJumpQWithNumber("~y~The 'MixSets old.ini' settings was moved. There is ~1~ warning, read the 'MixSets.log'.", 8000, false, numOldCfgNotFound, 0, 0, 0, 0, 0, false);
+							}
 						}
 						else {
 							if (lang == languages::PT)
-								CMessages::AddMessageJumpQWithNumber("~y~As configuracoes do 'MixSets old.ini' foram movidas. Ha ~1~ aviso, leia o 'MixSets.log'.", 8000, false, numOldCfgNotFound, 0, 0, 0, 0, 0, false);
+								CMessages::AddMessageJumpQ("~y~As configuracoes do 'MixSets old.ini' foram movidas com sucesso.", 6000, false, false);
 							else
-								CMessages::AddMessageJumpQWithNumber("~y~The 'MixSets old.ini' settings was moved. There is ~1~ warning, read the 'MixSets.log'.", 8000, false, numOldCfgNotFound, 0, 0, 0, 0, 0, false);
+								CMessages::AddMessageJumpQ("~y~As configuracoes do 'MixSets old.ini' foram movidas com sucesso.", 6000, false, false);
 						}
-					}
-					else {
-						if (lang == languages::PT)
-							CMessages::AddMessageJumpQ("~y~As configuracoes do 'MixSets old.ini' foram movidas com sucesso.", 6000, false, false);
-						else
-							CMessages::AddMessageJumpQ("~y~As configuracoes do 'MixSets old.ini' foram movidas com sucesso.", 6000, false, false);
 					}
 				}
 			}

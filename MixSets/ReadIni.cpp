@@ -2,6 +2,7 @@
 	MixSets by Junior_Djjr and entire GTA 3D Era community
 */
 #include "Common.h"
+#include "GameVersion.h"
 #include "CWorld.h"
 #include "CTimer.h"
 #include "CTheScripts.h"
@@ -26,9 +27,10 @@ using namespace std;
 
 
 // Globals
-bool bEnabled, bReadOldINI, bParsePreserveComments, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIMFX, bIMFXgunflash, bGunFuncs, bIniFailed, G_NoDensities, G_FixBicycleImpact,
-G_NoStencilShadows, G_OpenedHouses, G_RandWheelDettach, G_TaxiLights, G_ParaLandingFix, G_NoEmergencyMisWanted, G_NoGarageRadioChange,
-G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash;
+int gameVersion;
+bool bEnabled, bReadOldINI, bParsePreserveComments, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIMFX, bIMFXgunflash, bGunFuncs, bOLA, bIniFailed, bVersionFailed,
+G_NoDensities, G_FixBicycleImpact, G_NoStencilShadows, G_OpenedHouses, G_RandWheelDettach, G_TaxiLights, G_ParaLandingFix, G_NoEmergencyMisWanted,
+G_NoGarageRadioChange, G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash;
 
 int G_i, G_FPSlimit, G_ProcessPriority, G_FreezeWeather, G_CameraPhotoQuality, G_UseHighPedShadows, G_StreamMemory, G_Anisotropic, G_HowManyMinsInDay;
 
@@ -42,7 +44,7 @@ G_HeliSensibility, G_PlaneTrailSegments, G_SkidHeight, G_SunSize, G_RhinoFireRan
 G_VehOccupDrawDist_Boat, G_BrakePower, G_BrakeMin, G_TireEff_DustLife, G_TireEff_DustFreq, G_TireEff_DustSize;
 float G_TireEff_DustUpForce, G_TireSmk_UpForce, G_PedWeaponDrawDist, G_PedWeaponDrawDist_Final, G_PropCollDist_NEG, G_PropCollDist_POS,
 G_MediumGrassDistMult, G_DistBloodpoolTex, G_RainGroundSplashNum, G_RainGroundSplashArea, G_RainGroundSplashArea_HALF, G_RoadblockSpawnDist,
-G_RoadblockSpawnDist_NEG, G_PedPopulationMult, G_VehPopulationMult, G_FxEmissionRateShare, G_GunflashEmissionMult, G_VehCamHeightOffset;
+G_RoadblockSpawnDist_NEG, G_PedPopulationMult, G_VehPopulationMult, G_FxEmissionRateShare, G_GunflashEmissionMult, G_VehCamHeightOffset, G_ShadowsHeight;
 float zero = 0.0;
 
 uintptr_t ORIGINAL_MirrorsCreateBuffer;
@@ -163,6 +165,17 @@ void showintlog(int i) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void IncreaseMemoryValueIfValid(uintptr_t address, int32_t value, uint8_t validation, bool vp)
+{
+	if (ReadMemory<uint8_t>(address - 1, vp) != validation) return;
+	if (ReadMemory<int32_t>(address, vp) < value) WriteMemory<int32_t>(address, value, vp);
+}
+void IncreaseMemoryValueIfValid_Byte(uintptr_t address, int8_t value, uint8_t validation, bool vp)
+{
+	if (ReadMemory<uint8_t>(address - 1, vp) != validation) return;
+	if (ReadMemory<int8_t>(address, vp) < value) WriteMemory<int8_t>(address, value, vp);
+}
 
 uint8_t CustomMaxAnisotropic()
 {
@@ -837,9 +850,10 @@ void ReadIni() {
 		WriteMemory<uint8_t>(0x53B759, i, true);
 	}
 
-	if (ReadIniBool(ini, &lg, "Graphics", "FireGroundLight")) {
+	/*if (ReadIniBool(ini, &lg, "Graphics", "FireGroundLight")) {
 		WriteMemory<uint8_t>(0x53B65A, 50, true); // the intensity value doesn't matter, idkw
-	}
+		// already included on SilentPatch now
+	}*/
 
 	if (ReadIniBool(ini, &lg, "Graphics", "NoFireCoronas")) {
 		MakeNOP(0x53B688, 10, true);
@@ -858,6 +872,34 @@ void ReadIni() {
 		G_HideWeaponsOnVehicle = true;
 	}
 	else G_HideWeaponsOnVehicle = false;
+
+
+	if (ReadIniFloat(ini, &lg, "Graphics", "ShadowsHeight", &f)) {
+		// Remove 0.06 z-offset from shadows, PS2 doesn't do it
+		G_ShadowsHeight = f;
+		WriteMemory<float*>(0x709B2D + 2, &G_ShadowsHeight);
+		WriteMemory<float*>(0x709B8C + 2, &G_ShadowsHeight);
+		WriteMemory<float*>(0x709BC5 + 2, &G_ShadowsHeight);
+		WriteMemory<float*>(0x709BF4 + 2, &G_ShadowsHeight);
+		WriteMemory<float*>(0x709C91 + 2, &G_ShadowsHeight);
+
+		WriteMemory<float*>(0x709E9C + 2, &G_ShadowsHeight);
+		WriteMemory<float*>(0x709EBA + 2, &G_ShadowsHeight);
+		WriteMemory<float*>(0x709ED5 + 2, &G_ShadowsHeight);
+
+		WriteMemory<float*>(0x70B21F + 2, &G_ShadowsHeight);
+		WriteMemory<float*>(0x70B371 + 2, &G_ShadowsHeight);
+		WriteMemory<float*>(0x70B4CF + 2, &G_ShadowsHeight);
+		WriteMemory<float*>(0x70B633 + 2, &G_ShadowsHeight);
+
+		WriteMemory<float*>(0x7085A7 + 2, &G_ShadowsHeight);
+	}
+	 
+	if (ReadIniFloat(ini, &lg, "Graphics", "ShadowsHeightHack", &f)) {
+		// Change z-hack multiplier from 2.0 to 256.0 as on PS2
+		WriteMemory<float>(0x8CD4F0, f, false);
+	}
+
 
 	
 
@@ -1267,7 +1309,7 @@ void ReadIni() {
 		WriteMemory<uint32_t>(0x4C1175, 0, true);
 	}
 
-	if (!inSAMP && ReadIniFloat(ini, &lg, "Gameplay", "VehCamHeightOffset", &f)) {
+	if (ReadIniFloat(ini, &lg, "Gameplay", "VehCamHeightOffset", &f)) {
 		G_VehCamHeightOffset = f;
 		injector::MakeInline<0x524776, 0x524776 + 6>([](injector::reg_pack& regs)
 		{
@@ -1606,22 +1648,6 @@ void ReadIni() {
 			WriteMemory<float>(0x6FD3A5 + 1, f, true);
 			WriteMemory<float>(0x6FD44E + 1, f, true);
 		}
-
-		if (ReadIniInt(ini, &lg, "Densities", "MinDesiredLoadedVeh", &i)) {
-			WriteMemory<uint8_t>(0x40B6AA + 2, i, true);
-		}
-
-		if (ReadIniInt(ini, &lg, "Densities", "DesiredLoadedVeh", &i)) {
-			WriteMemory<uint32_t>(0x8A5A84, i, false);
-		}
-
-		if (ReadIniInt(ini, &lg, "Densities", "DelayLoadDesiredVeh", &i)) {
-			WriteMemory<uint8_t>(0x40B9B6 + 6, i, true);
-		}
-
-		if (ReadIniInt(ini, &lg, "Densities", "MinLoadedGangVeh", &i)) {
-			WriteMemory<uint8_t>(0x40ACA5 + 2, i, true);
-		}
 		
 		/*
 		if (ReadIniFloat(ini, &lg, "Densities", "PropCollDist", &f)) {
@@ -1878,6 +1904,7 @@ void ReadIni_BeforeFirstFrame() {
 	int i;
 	float f;
 
+	bVersionFailed = false;
 	numOldCfgNotFound = 0;
 
 	CIniReader ini("MixSets.ini");
@@ -1937,9 +1964,24 @@ void ReadIni_BeforeFirstFrame() {
 		return;
 	}
 
+	gameVersion = GetGameVersion();
+
+	if (gameVersion != GAME_10US_COMPACT && gameVersion != GAME_10US_HOODLUM)
+	{
+		if (lang == languages::PT)
+			lg << "\nERROR: O executável do seu jogo não é compatível. Use Crack 1.0 US Hoodlum ou Compact.\n";
+		else
+			lg << "\nERROR: Your game executable isn't compatible. Use Crack 1.0 US Hoodlum or Compact.\n";
+		bVersionFailed = true;
+		bEnabled = false;
+		return;
+	} bVersionFailed = false;
+
+
 	if (ReadIniBool(ini, &lg, "Mod", "NoDensities")) {
 		G_NoDensities = true;
 	}
+	else G_NoDensities = false;
 
 
 	if (ReadIniBool(ini, &lg, "Mod", "SAMPdisadvantage")) {
@@ -2037,8 +2079,46 @@ void ReadIni_BeforeFirstFrame() {
 	else G_NoStencilShadows = false;
 
 
+
+
+	// -- Simple limit adjuster
+	if (!bOLA && ReadIniInt(ini, &lg, "Simple Limit Adjuster", "VehicleStructs", &i) && i > 0) {
+		IncreaseMemoryValueIfValid_Byte(0x5B8FE3 + 1, (50 * i), 0x6A, true);
+	}
+	if (ReadIniInt(ini, &lg, "Simple Limit Adjuster", "EnexEntries", &i) && i > 0) {
+		if (gameVersion == GAME_10US_HOODLUM)
+			IncreaseMemoryValueIfValid(0x156A798, (400 * i), 0x68, true);
+		else
+			IncreaseMemoryValueIfValid(0x43F928, (400 * i), 0x68, true);
+	}
+	if (ReadIniInt(ini, &lg, "Simple Limit Adjuster", "CarMatPipeDataPool", &i) && i > 0) {
+		IncreaseMemoryValueIfValid(0x5DA08D + 1, (4096 * 4), 0x68, true);
+		IncreaseMemoryValueIfValid(0x5DA0C9 + 1, (1024 * 4), 0x68, true);
+		IncreaseMemoryValueIfValid(0x5DA105 + 1, (4096 * 4), 0x68, true);
+	}
+
+
+
 	// -- Densities
 	if (!G_NoDensities) {
+
+		if (ReadIniInt(ini, &lg, "Densities", "MinDesiredLoadedVeh", &i)) {
+			WriteMemory<uint8_t>(0x40B6AA + 2, i, true);
+		}
+
+		if (ReadIniInt(ini, &lg, "Densities", "DesiredLoadedVeh", &i)) {
+			WriteMemory<uint32_t>(0x8A5A84, i, false);
+			if (!bOLA) IncreaseMemoryValueIfValid_Byte(0x5B8FE3 + 1, (i * 5), 0x6A, true); // Note: if 12 (default), it will increase the VehicleStructs from 50 to 60 (kepping a margin)
+		}
+
+		if (ReadIniInt(ini, &lg, "Densities", "DelayLoadDesiredVeh", &i)) {
+			WriteMemory<uint8_t>(0x40B9B6 + 6, i, true);
+		}
+
+		if (ReadIniInt(ini, &lg, "Densities", "MinLoadedGangVeh", &i)) {
+			WriteMemory<uint8_t>(0x40ACA5 + 2, i, true);
+		}
+
 		if (!inSAMP && ReadIniFloat(ini, &lg, "Densities", "PedPopulationMult", &f)) {
 			G_PedPopulationMult = f;
 			injector::MakeInline<0x5BC1E9, 0x5BC1E9 + 7>([](injector::reg_pack& regs)
