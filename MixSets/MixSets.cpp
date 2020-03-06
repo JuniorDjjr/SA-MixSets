@@ -59,7 +59,7 @@ public:
 	MixSets() {
 
 		lg.open("MixSets.log", fstream::out | fstream::trunc);
-		lg << "v4.0.2" << "\n";
+		lg << "v4.0.3" << "\n";
 		lg.flush();
 
 
@@ -147,55 +147,33 @@ public:
 
 				if (G_HideWeaponsOnVehicle)
 				{
-					CPed *playerOne = FindPlayerPed(0);
-					CPed *playerTwo = FindPlayerPed(1);
+					int playerId = 0;
+					while (playerId <= 1)
+					{
+						CPed *player = FindPlayerPed(playerId);
 
-					if (playerOne) {
-						if (playerOne->m_nPedFlags.bInVehicle) {
-							bPlayerRenderWeaponInVehicleLastFrame = true;
-							int camMode = TheCamera.m_aCams[0].m_nMode;
-							CPad *pad = CPad::GetPad(0);
-							if (pad->GetLookLeft() || pad->GetLookRight() || pad->GetCarGunFired() ||
-								camMode == eCamMode::MODE_AIMWEAPON_FROMCAR || camMode == eCamMode::MODE_TWOPLAYER_IN_CAR_AND_SHOOTING) {
-								playerOne->m_pPlayerData->m_bRenderWeapon = true;
-								if (playerTwo) playerTwo->m_pPlayerData->m_bRenderWeapon = true;
+						if (player) {
+							if (player->m_nPedFlags.bInVehicle) {
+								bPlayerRenderWeaponInVehicleLastFrame = true;
+								int camMode = TheCamera.m_aCams[0].m_nMode;
+								CPad *pad = CPad::GetPad(playerId);
+								if (pad->GetLookLeft() || pad->GetLookRight() ||
+									(player->m_pVehicle->GetVehicleAppearance() == eVehicleApperance::VEHICLE_APPEARANCE_BIKE && pad->GetCarGunFired()) ||
+									camMode == eCamMode::MODE_AIMWEAPON_FROMCAR || camMode == eCamMode::MODE_TWOPLAYER_IN_CAR_AND_SHOOTING) {
+									player->m_pPlayerData->m_bRenderWeapon = true;
+								}
+								else {
+									player->m_pPlayerData->m_bRenderWeapon = false;
+								}
 							}
 							else {
-								playerOne->m_pPlayerData->m_bRenderWeapon = false;
-								if (playerTwo) playerTwo->m_pPlayerData->m_bRenderWeapon = false;
+								if (bPlayerRenderWeaponInVehicleLastFrame) {
+									player->m_pPlayerData->m_bRenderWeapon = true;
+									bPlayerRenderWeaponInVehicleLastFrame = false;
+								}
 							}
 						}
-						else {
-							if (bPlayerRenderWeaponInVehicleLastFrame) {
-								playerOne->m_pPlayerData->m_bRenderWeapon = true;
-								if (playerTwo) playerTwo->m_pPlayerData->m_bRenderWeapon = true;
-								bPlayerRenderWeaponInVehicleLastFrame = false;
-							}
-						}
-					}
-
-					if (playerTwo) {
-						if (playerTwo->m_nPedFlags.bInVehicle && playerTwo->m_pPlayerData) {
-							bPlayerTwoRenderWeaponInVehicleLastFrame = true;
-							int camMode = TheCamera.m_aCams[0].m_nMode;
-							CPad *pad = CPad::GetPad(0);
-							if (pad->GetLookLeft() || pad->GetLookRight() || pad->GetCarGunFired() ||
-								camMode == eCamMode::MODE_AIMWEAPON_FROMCAR || camMode == eCamMode::MODE_TWOPLAYER_IN_CAR_AND_SHOOTING) {
-								playerTwo->m_pPlayerData->m_bRenderWeapon = true;
-								if (playerTwo) playerTwo->m_pPlayerData->m_bRenderWeapon = true;
-							}
-							else {
-								playerTwo->m_pPlayerData->m_bRenderWeapon = false;
-								if (playerTwo) playerTwo->m_pPlayerData->m_bRenderWeapon = false;
-							}
-						}
-						else {
-							if (bPlayerTwoRenderWeaponInVehicleLastFrame) {
-								playerTwo->m_pPlayerData->m_bRenderWeapon = true;
-								if (playerTwo) playerTwo->m_pPlayerData->m_bRenderWeapon = true;
-								bPlayerTwoRenderWeaponInVehicleLastFrame = false;
-							}
-						}
+						playerId++;
 					}
 				}
 
@@ -389,13 +367,15 @@ public:
 
 
 		Events::vehicleRenderEvent += [](CVehicle *vehicle) {
-			CAutomobile *automobile = (CAutomobile *)vehicle;
 
 			if (bEnabled) {
 
+				CAutomobile *automobile = (CAutomobile *)vehicle;
+
 				if (G_TaxiLights) {
 					if (vehicle->m_nModelIndex == MODEL_TAXI || vehicle->m_nModelIndex == MODEL_CABBIE) {
-						if (vehicle->m_nVehicleFlags.bLightsOn && !vehicle->ms_forceVehicleLightsOff) {
+						//if (vehicle->m_nVehicleFlags.bLightsOn && !vehicle->ms_forceVehicleLightsOff) {
+						if (vehicle->m_pDriver && vehicle->m_nNumPassengers == 0 && vehicle->m_nVehicleFlags.bEngineOn && vehicle->m_fHealth > 0.0f) {
 							automobile->SetTaxiLight(true);
 						}
 						else {

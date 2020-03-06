@@ -44,7 +44,8 @@ G_HeliSensibility, G_PlaneTrailSegments, G_SkidHeight, G_SunSize, G_RhinoFireRan
 G_VehOccupDrawDist_Boat, G_BrakePower, G_BrakeMin, G_TireEff_DustLife, G_TireEff_DustFreq, G_TireEff_DustSize;
 float G_TireEff_DustUpForce, G_TireSmk_UpForce, G_PedWeaponDrawDist, G_PedWeaponDrawDist_Final, G_PropCollDist_NEG, G_PropCollDist_POS,
 G_MediumGrassDistMult, G_DistBloodpoolTex, G_RainGroundSplashNum, G_RainGroundSplashArea, G_RainGroundSplashArea_HALF, G_RoadblockSpawnDist,
-G_RoadblockSpawnDist_NEG, G_PedPopulationMult, G_VehPopulationMult, G_FxEmissionRateShare, G_GunflashEmissionMult, G_VehCamHeightOffset, G_ShadowsHeight;
+G_RoadblockSpawnDist_NEG, G_PedPopulationMult, G_VehPopulationMult, G_FxEmissionRateShare, G_GunflashEmissionMult, G_VehCamHeightOffset,
+G_ShadowsHeight, G_FxDistanceMult_A, G_FxDistanceMult_B;
 float zero = 0.0;
 
 uintptr_t ORIGINAL_MirrorsCreateBuffer;
@@ -476,6 +477,10 @@ void ReadIni() {
 		G_UseHighPedShadows = i;
 	}
 	else G_UseHighPedShadows = -1;
+
+	if (ReadIniBool(ini, &lg, "Graphics", "NoLowPoleShadows")) {
+		WriteMemory<uint8_t>(0x70C750, 0xC3, true);
+	}
 
 	if (ReadIniBool(ini, &lg, "Graphics", "NoPlaneTrails")) {
 		MakeNOP(0x7185B0, 5, true);
@@ -1625,7 +1630,7 @@ void ReadIni() {
 		if (ReadIniBool(ini, &lg, "Densities", "NoLODduringFly")) {
 			MakeNOP(0x5557CF, 7, true);
 		}
-		
+		 
 		if (ReadIniFloat(ini, &lg, "Densities", "ShadDist_AllPerm", &f)) {
 			WriteMemory<float>(0x70C995 + 1, f, true); //CShadows::UpdatePermanentShadows
 			WriteMemory<float>(0x70C9F3 + 1, f, true); //CShadows::UpdatePermanentShadows
@@ -1741,7 +1746,20 @@ void ReadIni() {
 	if ((!inSAMP || (inSAMP && rpSAMP)) && ReadIniBool(ini, &lg, "Interface", "NoCrosshair")) {
 		MakeNOP(0x58FBBF, 5);
 	}
-
+	if (ReadIniBool(ini, &lg, "Interface", "ColorableRadarDisc")) {
+		WriteMemory<uint8_t>(0x58A9A2, 255, true);
+		WriteMemory<uint8_t>(0x58A99A, 255, true);
+		WriteMemory<uint8_t>(0x58A996, 255, true);
+		WriteMemory<uint8_t>(0x58A8EE, 255, true);
+		WriteMemory<uint8_t>(0x58A8E6, 255, true);
+		WriteMemory<uint8_t>(0x58A8DE, 255, true);
+		WriteMemory<uint8_t>(0x58A89A, 255, true);
+		WriteMemory<uint8_t>(0x58A896, 255, true);
+		WriteMemory<uint8_t>(0x58A894, 255, true);
+		WriteMemory<uint8_t>(0x58A798, 255, true);
+		WriteMemory<uint8_t>(0x58A790, 255, true);
+		WriteMemory<uint8_t>(0x58A78E, 255, true);
+	}
 
 
 	// -- Audio
@@ -2065,6 +2083,22 @@ void ReadIni_BeforeFirstFrame() {
 			WriteMemory<float>(0x4A97B0 + 1, 0.75f, true);
 			WriteMemory<float>(0x4A97C6 + 1, 0.75f, true);
 			WriteMemory<float>(0x4A97DC + 1, 0.75f, true);
+		}
+	}
+
+	if (!bReloading && ReadIniFloat(ini, &lg, "Graphics", "FxDistanceMult", &f)) {
+		if (ReadMemory<uintptr_t>(0x4AB032, true) == 0x00859AA0) {
+			G_FxDistanceMult_A = 0.00390625f * f;
+			WriteMemory<float*>(0x4AB032, &G_FxDistanceMult_A, true);
+			G_FxDistanceMult_B = 0.015625f * f;
+			WriteMemory<float*>(0x4A4247, &G_FxDistanceMult_B, true);
+			WriteMemory<float*>(0x4A4255, &G_FxDistanceMult_B, true);
+		}
+		else {
+			if (lang == languages::PT)
+				lg << "\nAVISO: 'FxDistanceMult' não foi ativada pois outro mod alterou o valor.\n";
+			else
+				lg << "\nWARNING: 'FxDistanceMult' was not activated because another mod changed the value.\n";
 		}
 	}
 
