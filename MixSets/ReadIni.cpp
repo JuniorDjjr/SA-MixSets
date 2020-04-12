@@ -43,7 +43,7 @@ G_FootstepsDist, G_PickupsDrawDist, G_CarPedImpact, G_BikePedImpact, Default_Bik
 G_HeliSensibility, G_PlaneTrailSegments, G_SkidHeight, G_SunSize, G_RhinoFireRange, G_VehOccupDrawDist,
 G_VehOccupDrawDist_Boat, G_BrakePower, G_BrakeMin, G_TireEff_DustLife, G_TireEff_DustFreq, G_TireEff_DustSize;
 float G_TireEff_DustUpForce, G_TireSmk_UpForce, G_PedWeaponDrawDist, G_PedWeaponDrawDist_Final, G_PropCollDist_NEG, G_PropCollDist_POS,
-G_MediumGrassDistMult, G_DistBloodpoolTex, G_RainGroundSplashNum, G_RainGroundSplashArea, G_RainGroundSplashArea_HALF, G_RoadblockSpawnDist,
+G_MediumGrassDistMult, G_FireCoronaSize, G_DistBloodpoolTex, G_RainGroundSplashNum, G_RainGroundSplashArea, G_RainGroundSplashArea_HALF, G_RoadblockSpawnDist,
 G_RoadblockSpawnDist_NEG, G_PedPopulationMult, G_VehPopulationMult, G_FxEmissionRateShare, G_GunflashEmissionMult, G_VehCamHeightOffset,
 G_ShadowsHeight, G_FxDistanceMult_A, G_FxDistanceMult_B;
 float zero = 0.0;
@@ -847,8 +847,8 @@ void ReadIni() {
 	}
 
 	if (ReadIniFloat(ini, &lg, "Graphics", "FireCoronaSize", &f)) {
-		G_MediumGrassDistMult = f;
-		WriteMemory<float*>(0x53B784 + 2, &G_MediumGrassDistMult, true);
+		G_FireCoronaSize = f;
+		WriteMemory<float*>(0x53B784 + 2, &G_FireCoronaSize, true);
 	}
 	
 	if (ReadIniInt(ini, &lg, "Graphics", "FireLensflare", &i)) {
@@ -1320,6 +1320,19 @@ void ReadIni() {
 		{
 			regs.ecx = *(uint32_t*)(regs.edi + 0x4C8); //original code mov ecx, [edi+4C8h]
 			*(float*)(regs.esp + 0x78 - 0x60) += G_VehCamHeightOffset;
+		});
+	}
+
+	if (!inSAMP && ReadIniBool(ini, &lg, "Gameplay", "DuckAnyWeapon")) {
+		injector::MakeInline<0x692653>([](injector::reg_pack& regs)
+		{
+			CWeaponInfo *weaponInfo = (CWeaponInfo *)regs.eax;
+			if (weaponInfo->m_dwAnimGroup != 29 && weaponInfo->m_dwAnimGroup != 30) {
+				*(uintptr_t*)(regs.esp - 0x4) = 0x69267B;
+			}
+			else {
+				*(uintptr_t*)(regs.esp - 0x4) = 0x692677;
+			}
 		});
 	}
 

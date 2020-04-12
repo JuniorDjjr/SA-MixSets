@@ -59,9 +59,8 @@ public:
 	MixSets() {
 
 		lg.open("MixSets.log", fstream::out | fstream::trunc);
-		lg << "v4.0.3" << "\n";
+		lg << "v4.0.5" << "\n";
 		lg.flush();
-
 
 		bEnabled = false;
 
