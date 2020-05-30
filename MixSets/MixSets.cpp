@@ -43,7 +43,7 @@ languages lang;
 
 // External vars from ReadIni
 extern bool bEnabled, bReadOldINI, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIniFailed, bVersionFailed, bIMFX, bGunFuncs, bOLA, G_NoStencilShadows,
-G_OpenedHouses, G_RandWheelDettach, G_TaxiLights, G_ParaLandingFix, G_NoGarageRadioChange, G_NoEmergencyMisWanted,
+G_OpenedHouses, G_TaxiLights, G_ParaLandingFix, G_NoGarageRadioChange, G_NoEmergencyMisWanted,
 G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash;
 extern int G_i, numOldCfgNotFound, G_ProcessPriority, G_FreezeWeather, G_FPSlimit, G_UseHighPedShadows, G_StreamMemory,
 G_Anisotropic, G_HowManyMinsInDay;
@@ -59,7 +59,7 @@ public:
 	MixSets() {
 
 		lg.open("MixSets.log", fstream::out | fstream::trunc);
-		lg << "v4.0.5" << "\n";
+		lg << "v4.0.6" << "\n";
 		lg.flush();
 
 		bEnabled = false;
@@ -213,29 +213,6 @@ public:
 
 				if (G_HowManyMinsInDay > 0 && !inSAMP) {
 					WriteMemory<uint32_t>(0xB7015C, G_HowManyMinsInDay, false);
-				}
-
-				if (G_RandWheelDettach) {
-					int wheel = 2;
-					switch (CGeneral::GetRandomNumberInRange(1, 5))
-					{
-					case 1:
-						wheel = 2;
-						break;
-					case 2:
-						wheel = 5;
-						break;
-					case 3:
-						wheel = 4;
-						break;
-					case 4:
-						wheel = 7;
-						break;
-					}
-					WriteMemory<uint8_t>(0x6B38BC, wheel, false);
-					WriteMemory<uint8_t>(0x6B38C7, wheel, false);
-					int wheelOffset = (wheel * 4) + 0x648;
-					WriteMemory<uint8_t>(0x6B38D1, wheelOffset, false);
 				}
 
 				if (G_ParaLandingFix && !inSAMP && !bNoCLEO) {

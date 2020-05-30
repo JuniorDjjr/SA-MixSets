@@ -17,6 +17,7 @@
 #include "Fx_c.h"
 #include "IMFX/Gunflashes.h"
 #include <filesystem>
+#include "CGeneral.h"
 #include "CMenuManager.h"
 
 using namespace plugin;
@@ -29,7 +30,7 @@ using namespace std;
 // Globals
 int gameVersion;
 bool bEnabled, bReadOldINI, bParsePreserveComments, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIMFX, bIMFXgunflash, bGunFuncs, bOLA, bIniFailed, bVersionFailed,
-G_NoDensities, G_FixBicycleImpact, G_NoStencilShadows, G_OpenedHouses, G_RandWheelDettach, G_TaxiLights, G_ParaLandingFix, G_NoEmergencyMisWanted,
+G_NoDensities, G_FixBicycleImpact, G_NoStencilShadows, G_OpenedHouses, G_TaxiLights, G_ParaLandingFix, G_NoEmergencyMisWanted,
 G_NoGarageRadioChange, G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash;
 
 int G_i, G_FPSlimit, G_ProcessPriority, G_FreezeWeather, G_CameraPhotoQuality, G_UseHighPedShadows, G_StreamMemory, G_Anisotropic, G_HowManyMinsInDay;
@@ -183,60 +184,54 @@ uint8_t CustomMaxAnisotropic()
 	return G_Anisotropic;
 }
 
-float G_VehFlipDamage = 3.5f;
+float G_VehFlipDamage = 0.1f;
+
+void __cdecl VehFlipDamage_Process_Damage(CPed *ped) {
+	if (ped->IsPlayer()) {
+		ped->m_fHealth -= (G_VehFlipDamage * CTimer::ms_fTimeStep) * 50.0f;
+	}
+	else {
+		ped->m_fHealth -= (G_VehFlipDamage * CTimer::ms_fTimeStep);
+	}
+}
+
+void __cdecl VehFlipDamage_Process(CVehicle *veh)
+{
+	if (veh) {
+		if (veh->m_pDriver) {
+			VehFlipDamage_Process_Damage(veh->m_pDriver);
+		}
+		if (veh->m_nNumPassengers > 0)
+		{
+			for (int i = 0; i < 8; ++i)
+			{
+				if (veh->m_apPassengers[i] > 0) VehFlipDamage_Process_Damage(veh->m_apPassengers[i]);
+			}
+		}
+	}
+}
 
 void __declspec(naked) VehFlipDamage_ASM() {
 	_asm {
 		fstp st(0)
+
 		push esi
-		cmp dword ptr[esp + 4], 0x00570E84
-		jnz _RemoveHealth // CPed vehicle already in ESI
-		mov esi, ecx
+		call VehFlipDamage_Process
+		add esp, 4 // params
 
-		_RemoveHealth:
-			push ebx
-			xor ebx, ebx
+		retn
+	}
+}
 
-		_RemoveHealth_Loop:
-			lea eax, [ebx * 0x04]
-			mov eax, dword ptr[esi + 0x460 + eax]
-			push eax
-			call _RemoveHealthFromPed
-			inc ebx
-			cmp ebx, 0x09
-			jne _RemoveHealth_Loop
+void __declspec(naked) VehFlipDamage_Player_ASM() {
+	_asm {
+		fstp st(0)
 
-			pop ebx
-			pop esi
-			retn
+		push ecx
+		call VehFlipDamage_Process
+		add esp, 4 // params
 
-		_RemoveHealthFromPed: // void __stdcall (*)(CPed*)                        
-			mov eax, dword ptr[esp + 4]
-			test eax, eax
-			jz _RemoveHealthFromPed_Ret
-
-			push eax
-			push 0x0 // 0.0
-			push G_VehFlipDamage
-			mov ecx, 0x00B7CB5C // TimeStep
-			fld dword ptr[ecx]
-			fmul dword ptr[esp]
-			fsubr dword ptr[eax + 0x540] // Ped.fHeath
-			fld dword ptr[esp + 4] // 0.0
-			fcomp st(1)
-			fnstsw ax
-			test ah, 0x41
-			jnz _RemoveHealthFromPed_Ld // < 0.0
-			fstp st(0)
-			fld dword ptr[esp + 4] // 0.0
-
-		_RemoveHealthFromPed_Ld:
-			add esp, 0x08
-			pop eax
-			fstp dword ptr[eax + 0x540]
-
-		_RemoveHealthFromPed_Ret:
-			retn 4
+		retn
 	}
 }
 
@@ -341,6 +336,7 @@ void _declspec(naked) FixMouseStuck_ASM()
 }
 
 void ForceHighMirrorRes_MirrorsCreateBuffer() {
+	// To make it compatible with SilentPatch
 	FxQuality_e qualityBackup = g_fx.GetFxQuality();
 	g_fx.SetFxQuality(FXQUALITY_VERY_HIGH);
 	((void(__cdecl *)())ORIGINAL_MirrorsCreateBuffer)();
@@ -1101,9 +1097,9 @@ void ReadIni() {
 	if (!inSAMP && ReadIniBool(ini, &lg, "Gameplay", "VehFlipDontBurn")) {
 		ReadIniFloat(ini, &lg, "Gameplay", "VehFlipDamage", &f);
 		if (f > 0.0f) {
-			G_VehFlipDamage = f;
+			G_VehFlipDamage = f / 8.0f;
 			MakeCALL(0x006A776B, VehFlipDamage_ASM);
-			MakeCALL(0x00570E7F, VehFlipDamage_ASM);
+			MakeCALL(0x00570E7F, VehFlipDamage_Player_ASM);
 			MakeNOP(0x006A7770);
 			MakeNOP(0x00570E84);
 		}
@@ -1193,11 +1189,38 @@ void ReadIni() {
 		G_OpenedHouses = true;
 	}
 	else G_OpenedHouses = false;
-
+	 
 	if (ReadIniBool(ini, &lg, "Gameplay", "RandWheelDettach")) {
-		G_RandWheelDettach = true;
+
+		injector::MakeInline<0x6B38C4, 0x6B38C4 + 17>([](injector::reg_pack& regs)
+		{
+			CAutomobile *automobile = (CAutomobile*)regs.esi;
+			int nodeId = 5;
+			switch(CGeneral::GetRandomNumberInRange(0, 5))
+			{
+			case 1:
+				nodeId = 2;
+				break;
+			case 2:
+				nodeId = 5;
+				break;
+			case 3:
+				nodeId = 4;
+				break;
+			case 4:
+				nodeId = 7;
+				break;
+			}
+			RwFrame *frame = automobile->m_aCarNodes[nodeId];
+			if (frame && frame->object.parent) {
+				automobile->SpawnFlyingComponent(nodeId, 1);
+				regs.eax = (uintptr_t)frame;
+			}
+			else {
+				*(uintptr_t*)(regs.esp - 4) = 0x6B38F7;
+			}
+		});
 	}
-	else G_RandWheelDettach = false;
 
 	if (!inSAMP && ReadIniBool(ini, &lg, "Gameplay", "HostileGangs")) {
 		WriteMemory<uint16_t>(0x5FC88F, 0x9066, true);
