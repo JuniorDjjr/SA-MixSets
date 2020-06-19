@@ -12,7 +12,6 @@
 #include "CCamera.h"
 #include "CWeather.h"
 #include "CGame.h"
-#include "Fx_c.h"
 #include "CMirrors.h"
 #include "Fx_c.h"
 #include "IMFX/Gunflashes.h"
@@ -46,7 +45,7 @@ G_VehOccupDrawDist_Boat, G_BrakePower, G_BrakeMin, G_TireEff_DustLife, G_TireEff
 float G_TireEff_DustUpForce, G_TireSmk_UpForce, G_PedWeaponDrawDist, G_PedWeaponDrawDist_Final, G_PropCollDist_NEG, G_PropCollDist_POS,
 G_MediumGrassDistMult, G_FireCoronaSize, G_DistBloodpoolTex, G_RainGroundSplashNum, G_RainGroundSplashArea, G_RainGroundSplashArea_HALF, G_RoadblockSpawnDist,
 G_RoadblockSpawnDist_NEG, G_PedPopulationMult, G_VehPopulationMult, G_FxEmissionRateShare, G_GunflashEmissionMult, G_VehCamHeightOffset,
-G_ShadowsHeight, G_FxDistanceMult_A, G_FxDistanceMult_B;
+G_ShadowsHeight, G_FxDistanceMult_A, G_FxDistanceMult_B, G_WaveLightingCamHei, G_WaveLightingMult, G_BoatFoamLightingFix, G_NoWavesIfCamHeight;
 float zero = 0.0;
 
 uintptr_t ORIGINAL_MirrorsCreateBuffer;
@@ -876,7 +875,6 @@ void ReadIni() {
 
 
 	if (ReadIniFloat(ini, &lg, "Graphics", "ShadowsHeight", &f)) {
-		// Remove 0.06 z-offset from shadows, PS2 doesn't do it
 		G_ShadowsHeight = f;
 		WriteMemory<float*>(0x709B2D + 2, &G_ShadowsHeight);
 		WriteMemory<float*>(0x709B8C + 2, &G_ShadowsHeight);
@@ -897,12 +895,46 @@ void ReadIni() {
 	}
 	 
 	if (ReadIniFloat(ini, &lg, "Graphics", "ShadowsHeightHack", &f)) {
-		// Change z-hack multiplier from 2.0 to 256.0 as on PS2
 		WriteMemory<float>(0x8CD4F0, f, false);
 	}
 
+	if (ReadIniInt(ini, &lg, "Graphics", "WaterWavesRadius", &i)) {
+		*(int*)(0x8D37D0) = i;
+	}
+	 
+	ReadIniFloat(ini, &lg, "Graphics", "WaveLightingCamHei", &G_WaveLightingCamHei); //0.1f
+	ReadIniFloat(ini, &lg, "Graphics", "WaveLightingMult", &G_WaveLightingMult);
+	 
+	if (G_WaveLightingCamHei != -1.0f || G_WaveLightingMult != -1.0f) {
+		if (G_WaveLightingCamHei == -1.0f) G_WaveLightingCamHei = 0.0f;
+		if (G_WaveLightingMult == -1.0f) G_WaveLightingMult = 1.0f;
+		injector::MakeInline<0x6E7141, 0x6E7141 + 5>([](injector::reg_pack& regs) {
+			reinterpret_cast<CVector*>(regs.ecx)->Normalise(); // original code
+			if (CGame::currArea == 0)
+			{
+				float camHeight = TheCamera.GetPosition().z;
+				if (camHeight < 0.0f) camHeight = 0.0f;
+				*(float*)(regs.esi + 0x0) /= 1.0f + (camHeight * G_WaveLightingCamHei);
+				*(float*)(regs.esi + 0x4) /= 1.0f + (camHeight * G_WaveLightingCamHei);
+				*(float*)(regs.esi + 0x0) *= G_WaveLightingMult;
+				*(float*)(regs.esi + 0x4) *= G_WaveLightingMult;
+				if (*(float*)(regs.esi + 0x0) > 0.2f) *(float*)(regs.esi + 0x0) = 0.2f;
+				if (*(float*)(regs.esi + 0x4) > 0.2f) *(float*)(regs.esi + 0x4) = 0.2f;
+				if (*(float*)(regs.esi + 0x0) < -0.2f) *(float*)(regs.esi + 0x0) = -0.2f;
+				if (*(float*)(regs.esi + 0x4) < -0.2f) *(float*)(regs.esi + 0x4) = -0.2f;
+			}
+		});
+	}
 
-	
+	if (ReadIniFloat(ini, &lg, "Graphics", "BoatFoamLightingFix", &f)) {
+		G_BoatFoamLightingFix = f;
+	}
+	else G_BoatFoamLightingFix = -1.0f;
+
+	if (ReadIniFloat(ini, &lg, "Graphics", "NoWavesIfCamHeight", &f)) {
+		G_NoWavesIfCamHeight = f;
+	}
+	else G_NoWavesIfCamHeight = -1.0f;
 
 
 	// -- Gameplay

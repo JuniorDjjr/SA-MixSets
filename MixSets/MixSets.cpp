@@ -18,6 +18,7 @@
 #include <game_sa\common.h>
 #include "CMessages.h"
 #include "CCamera.h"
+#include "CGame.h"
 #include "IMFX/Gunflashes.h"
 
 // Other
@@ -36,7 +37,7 @@ const unsigned int GET_SCRIPT_STRUCT_NAMED = 0x10AAA;
 bool Read = false, forceUpdateQualityFuncs = true, bProcessOnceOnScripts = false, bProcessOnceAfterIntro = false,
 bPlayerRenderWeaponInVehicleLastFrame = false, bPlayerTwoRenderWeaponInVehicleLastFrame = false, bNoCLEO = true,
 bOnEmergencyMissionLastFrame = false;
-int curQuality = -1, lastQuality = -1, G_NoEmergencyMisWanted_MaxWantedLevel = -1;
+int curQuality = -1, lastQuality = -1, G_NoEmergencyMisWanted_MaxWantedLevel = -1, G_Backup_WavesRadius = 48;
 fstream lg;
 languages lang;
 
@@ -48,7 +49,7 @@ G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bRel
 extern int G_i, numOldCfgNotFound, G_ProcessPriority, G_FreezeWeather, G_FPSlimit, G_UseHighPedShadows, G_StreamMemory,
 G_Anisotropic, G_HowManyMinsInDay;
 extern string G_ReloadCommand;
-extern float G_f;
+extern float G_f, G_BoatFoamLightingFix, G_NoWavesIfCamHeight;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +60,7 @@ public:
 	MixSets() {
 
 		lg.open("MixSets.log", fstream::out | fstream::trunc);
-		lg << "v4.0.6" << "\n";
+		lg << "v4.1" << "\n";
 		lg.flush();
 
 		bEnabled = false;
@@ -213,6 +214,39 @@ public:
 
 				if (G_HowManyMinsInDay > 0 && !inSAMP) {
 					WriteMemory<uint32_t>(0xB7015C, G_HowManyMinsInDay, false);
+				}
+
+				if (G_NoWavesIfCamHeight > 0) {
+					if (CGame::currArea == 0 && G_NoWavesIfCamHeight >= 0.0f)
+					{
+						if (TheCamera.GetPosition().z > G_NoWavesIfCamHeight) {
+							if (*(int*)(0x8D37D0) != 0) {
+								G_Backup_WavesRadius = *(int*)(0x8D37D0);
+								*(int*)(0x8D37D0) = 0;
+							}
+						}
+						else {
+							if (*(int*)(0x8D37D0) == 0) {
+								*(int*)(0x8D37D0) = G_Backup_WavesRadius;
+							}
+						}
+					}
+				}
+
+				if (G_BoatFoamLightingFix >= 0.0)
+				{
+					float balance = (CTimeCycle::m_CurrentColours.m_fWaterBlue + CTimeCycle::m_CurrentColours.m_fWaterGreen + CTimeCycle::m_CurrentColours.m_fWaterRed + CTimeCycle::m_CurrentColours.m_fWaterAlpha) / 255.0f / 4.0f;
+					balance = pow(balance, 2) + 0.1f;
+					balance *= G_BoatFoamLightingFix;
+					if (balance > 1.0f) balance = 1.0f;
+
+					// center
+					*(float*)0x8D390C = 0.4f * balance;
+					*(float*)0x8D391C = 0.4f * balance;
+
+					// sides
+					*(float*)0x8D3910 = 1.0f * balance;
+					*(float*)0x8D3918 = 1.0f * balance;
 				}
 
 				if (G_ParaLandingFix && !inSAMP && !bNoCLEO) {
