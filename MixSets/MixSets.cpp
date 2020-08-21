@@ -45,7 +45,7 @@ languages lang;
 // External vars from ReadIni
 extern bool bEnabled, bReadOldINI, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIniFailed, bVersionFailed, bIMFX, bGunFuncs, bOLA, G_NoStencilShadows,
 G_OpenedHouses, G_TaxiLights, G_ParaLandingFix, G_NoGarageRadioChange, G_NoEmergencyMisWanted,
-G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash;
+G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash, G_NoSamSite;
 extern int G_i, numOldCfgNotFound, G_ProcessPriority, G_FreezeWeather, G_FPSlimit, G_UseHighPedShadows, G_StreamMemory,
 G_Anisotropic, G_HowManyMinsInDay;
 extern string G_ReloadCommand;
@@ -60,7 +60,7 @@ public:
 	MixSets() {
 
 		lg.open("MixSets.log", fstream::out | fstream::trunc);
-		lg << "v4.1" << "\n";
+		lg << "v4.1.2" << "\n";
 		lg.flush();
 
 		bEnabled = false;
@@ -305,9 +305,15 @@ public:
 						else {
 							if (bOnEmergencyMissionLastFrame) FindPlayerPed()->SetWantedLevel(0);
 						}
+						if (!bOnEmergencyMissionLastFrame) {
+							WriteMemory<uint8_t>(0x5A07D0, 0xC3, true);
+						}
 						bOnEmergencyMissionLastFrame = true;
 					}
 					else {
+						if (bOnEmergencyMissionLastFrame && !G_NoSamSite) {
+							WriteMemory<uint8_t>(0x5A07D0, 0x83, true);
+						}
 						bOnEmergencyMissionLastFrame = false;
 						if (G_NoEmergencyMisWanted_MaxWantedLevel != -1) {
 							CWanted::SetMaximumWantedLevel(G_NoEmergencyMisWanted_MaxWantedLevel);
