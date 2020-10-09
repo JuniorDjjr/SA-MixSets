@@ -39,12 +39,12 @@ bPlayerRenderWeaponInVehicleLastFrame = false, bPlayerTwoRenderWeaponInVehicleLa
 bOnEmergencyMissionLastFrame = false;
 int curQuality = -1, lastQuality = -1, G_NoEmergencyMisWanted_MaxWantedLevel = -1, G_Backup_WavesRadius = 48;
 fstream lg;
-languages lang;
+languages lang; 
 
 
 // External vars from ReadIni
 extern bool bEnabled, bReadOldINI, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIniFailed, bVersionFailed, bIMFX, bGunFuncs, bOLA, G_NoStencilShadows,
-G_OpenedHouses, G_TaxiLights, G_ParaLandingFix, G_NoGarageRadioChange, G_NoEmergencyMisWanted,
+G_OpenedHouses, G_TaxiLights, G_ParaLandingFix, G_NoGarageRadioChange, G_NoEmergencyMisWanted, G_SCMfixes,
 G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash, G_NoSamSite;
 extern int G_i, numOldCfgNotFound, G_ProcessPriority, G_FreezeWeather, G_FPSlimit, G_UseHighPedShadows, G_StreamMemory,
 G_Anisotropic, G_HowManyMinsInDay;
@@ -60,15 +60,15 @@ public:
 	MixSets() {
 
 		lg.open("MixSets.log", fstream::out | fstream::trunc);
-		lg << "v4.1.2" << "\n";
+		lg << "v4.1.4" << "\n";
 		lg.flush();
 
 		bEnabled = false;
 
 		if (!ReadMemory<uint8_t>(0x400088, true) == 0xCA) {
-			lg << "ERROR: Game version not supported. Download GTA SA Crack 1.0 US (Hoodlum preferable)." << "\n\n";
+			lg << "ERROR: Game version not supported. Download GTA SA Crack 1.0 US." << "\n\n";
 			lg.flush();
-			MessageBoxA(0, "Game version not supported. Download GTA SA Crack 1.0 US (Hoodlum preferable).", "MixSets", 0);
+			MessageBoxA(0, "Game version not supported. Download GTA SA Crack 1.0 US.", "MixSets", 0);
 			return;
 		}
 		
@@ -249,75 +249,99 @@ public:
 					*(float*)0x8D3918 = 1.0f * balance;
 				}
 
-				if (G_ParaLandingFix && !inSAMP && !bNoCLEO) {
-					unsigned int script;
-					Command<GET_SCRIPT_STRUCT_NAMED>("PLCHUTE", &script);
-					if (script) {
-						unsigned char *offset = reinterpret_cast<CRunningScript *>(script)->m_pBaseIP;
-						offset += 4948;
+				if (!inSAMP && !bNoCLEO)
+				{
+					if (G_ParaLandingFix)
+					{
+						unsigned int script;
+						Command<GET_SCRIPT_STRUCT_NAMED>("PLCHUTE", &script);
+						if (script) {
+							unsigned char *offset = reinterpret_cast<CRunningScript *>(script)->m_pBaseIP;
+							offset += 4948;
 
-						uint32_t test = ReadMemory<uint32_t>(offset + 6);
-						if (test == 0x4C4C4146) { // default value: not yet fixed; valid script
-							/*
-								0812: AS_actor - 1 perform_animation "PARA_LAND" IFP "PARACHUTE" framedelta 10.0 loopA 0 lockX 1 lockY 1 lockF 0 time - 2
-								12 08 04 FF 0E 09 50 41 52 41 5F 4C 41 4E 44 0E 09 50 41 52 41 43 48 55 54 45 06 00 00 20 41 04 00 04 01 04 01 04 00 04 FE
-							*/
-							const uint8_t playanim[] = { 0x12, 0x08, 0x04, 0xFF, 0x0E, 0x09, 0x50, 0x41, 0x52, 0x41, 0x5F, 0x4C, 0x41, 0x4E, 0x44, 0x0E, 0x09, 0x50, 0x41, 0x52, 0x41, 0x43, 0x48, 0x55, 0x54, 0x45, 0x06, 0x00, 0x00, 0x20, 0x41, 0x04, 0x00, 0x04, 0x01, 0x04, 0x01, 0x04, 0x00, 0x04, 0xFE };
-							memcpy(offset, &playanim, sizeof(playanim));
-							offset += sizeof(playanim);
+							uint32_t test = ReadMemory<uint32_t>(offset + 6);
+							if (test == 0x4C4C4146) { // default value: not yet fixed; valid script
+								/*
+									0812: AS_actor - 1 perform_animation "PARA_LAND" IFP "PARACHUTE" framedelta 10.0 loopA 0 lockX 1 lockY 1 lockF 0 time - 2
+									12 08 04 FF 0E 09 50 41 52 41 5F 4C 41 4E 44 0E 09 50 41 52 41 43 48 55 54 45 06 00 00 20 41 04 00 04 01 04 01 04 00 04 FE
+								*/
+								const uint8_t playanim[] = { 0x12, 0x08, 0x04, 0xFF, 0x0E, 0x09, 0x50, 0x41, 0x52, 0x41, 0x5F, 0x4C, 0x41, 0x4E, 0x44, 0x0E, 0x09, 0x50, 0x41, 0x52, 0x41, 0x43, 0x48, 0x55, 0x54, 0x45, 0x06, 0x00, 0x00, 0x20, 0x41, 0x04, 0x00, 0x04, 0x01, 0x04, 0x01, 0x04, 0x00, 0x04, 0xFE };
+								memcpy(offset, &playanim, sizeof(playanim));
+								offset += sizeof(playanim);
 
-							const uint8_t jump[] = { 0x02, 0x00, 0x01, 0x62, 0xEC, 0xFF, 0xFF }; // 0002: goto -5022
-							memcpy(offset, &jump, sizeof(jump));
-						}
-					}
-				}
-
-				if (G_NoGarageRadioChange && !inSAMP && !bNoCLEO) {
-					unsigned int script;
-					Command<GET_SCRIPT_STRUCT_NAMED>("CARMOD", &script);
-					if (script) {
-						unsigned char *offset = reinterpret_cast<CRunningScript *>(script)->m_pBaseIP;
-						offset += 1839;
-
-						uint16_t test = ReadMemory<uint16_t>(offset);
-						if (test == 0x0A26) { // default value: not yet fixed; valid script
-							WriteMemory<uint16_t>(offset, 0x0000, false);
-							offset += 905;
-							WriteMemory<uint16_t>(offset, 0x0000, false);
-							offset += 688;
-							WriteMemory<uint16_t>(offset, 0x0000, false);
-						}
-					}
-				}
-
-				if (G_NoEmergencyMisWanted && !inSAMP && !bNoCLEO) {
-					unsigned int script[3];
-					Command<GET_SCRIPT_STRUCT_NAMED>("COPCAR", &script[0]);
-					Command<GET_SCRIPT_STRUCT_NAMED>("AMBULAN", &script[1]);
-					Command<GET_SCRIPT_STRUCT_NAMED>("FIRETRU", &script[2]);
-					if (script[0] || script[1] || script[2]) {
-						if (FindPlayerPed()->GetWantedLevel() == 0) {
-							if (G_NoEmergencyMisWanted_MaxWantedLevel == -1) {
-								G_NoEmergencyMisWanted_MaxWantedLevel = CWanted::MaximumWantedLevel;
+								const uint8_t jump[] = { 0x02, 0x00, 0x01, 0x62, 0xEC, 0xFF, 0xFF }; // 0002: goto -5022
+								memcpy(offset, &jump, sizeof(jump));
 							}
-							CWanted::SetMaximumWantedLevel(0);
+						}
+					}
+
+					if (G_NoGarageRadioChange) {
+						unsigned int script;
+						Command<GET_SCRIPT_STRUCT_NAMED>("CARMOD", &script);
+						if (script) {
+							unsigned char *offset = reinterpret_cast<CRunningScript *>(script)->m_pBaseIP;
+							offset += 1839;
+
+							uint16_t test = ReadMemory<uint16_t>(offset);
+							if (test == 0x0A26) { // default value: not yet fixed; valid script
+								WriteMemory<uint16_t>(offset, 0x0000, false);
+								offset += 905;
+								WriteMemory<uint16_t>(offset, 0x0000, false);
+								offset += 688;
+								WriteMemory<uint16_t>(offset, 0x0000, false);
+							}
+						}
+					}
+
+					if (G_NoEmergencyMisWanted) {
+						unsigned int script[3];
+						Command<GET_SCRIPT_STRUCT_NAMED>("COPCAR", &script[0]);
+						Command<GET_SCRIPT_STRUCT_NAMED>("AMBULAN", &script[1]);
+						Command<GET_SCRIPT_STRUCT_NAMED>("FIRETRU", &script[2]);
+						if (script[0] || script[1] || script[2]) {
+							if (FindPlayerPed()->GetWantedLevel() == 0) {
+								if (G_NoEmergencyMisWanted_MaxWantedLevel == -1) {
+									G_NoEmergencyMisWanted_MaxWantedLevel = CWanted::MaximumWantedLevel;
+								}
+								CWanted::SetMaximumWantedLevel(0);
+							}
+							else {
+								if (bOnEmergencyMissionLastFrame) FindPlayerPed()->SetWantedLevel(0);
+							}
+							if (!bOnEmergencyMissionLastFrame) {
+								WriteMemory<uint8_t>(0x5A07D0, 0xC3, true);
+							}
+							bOnEmergencyMissionLastFrame = true;
 						}
 						else {
-							if (bOnEmergencyMissionLastFrame) FindPlayerPed()->SetWantedLevel(0);
+							if (bOnEmergencyMissionLastFrame && !G_NoSamSite) {
+								WriteMemory<uint8_t>(0x5A07D0, 0x83, true);
+							}
+							bOnEmergencyMissionLastFrame = false;
+							if (G_NoEmergencyMisWanted_MaxWantedLevel != -1) {
+								CWanted::SetMaximumWantedLevel(G_NoEmergencyMisWanted_MaxWantedLevel);
+								G_NoEmergencyMisWanted_MaxWantedLevel = -1;
+							}
 						}
-						if (!bOnEmergencyMissionLastFrame) {
-							WriteMemory<uint8_t>(0x5A07D0, 0xC3, true);
-						}
-						bOnEmergencyMissionLastFrame = true;
 					}
-					else {
-						if (bOnEmergencyMissionLastFrame && !G_NoSamSite) {
-							WriteMemory<uint8_t>(0x5A07D0, 0x83, true);
-						}
-						bOnEmergencyMissionLastFrame = false;
-						if (G_NoEmergencyMisWanted_MaxWantedLevel != -1) {
-							CWanted::SetMaximumWantedLevel(G_NoEmergencyMisWanted_MaxWantedLevel);
-							G_NoEmergencyMisWanted_MaxWantedLevel = -1;
+
+					if (G_SCMfixes) {
+						unsigned int script;
+						Command<GET_SCRIPT_STRUCT_NAMED>("DRUGS4", &script);
+						if (script) {
+							unsigned char *offset = reinterpret_cast<CRunningScript *>(script)->m_pBaseIP;
+							offset += 66597;
+
+							// Reenable some subtitles
+							uint32_t test = ReadMemory<uint32_t>(offset);
+							if (test == 1174995925) { // default value: not yet fixed; valid script
+
+								const uint8_t NOP5bytes[] = { 0x52, 0x07, 0x03, 0x00, 0x00 };
+								memcpy(offset, &NOP5bytes, sizeof(NOP5bytes));
+								offset += sizeof(NOP5bytes);
+
+								memset(offset, 0, 72);
+							}
 						}
 					}
 				}

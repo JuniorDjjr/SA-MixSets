@@ -29,7 +29,7 @@ using namespace std;
 // Globals
 int gameVersion;
 bool bEnabled, bReadOldINI, bParsePreserveComments, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIMFX, bIMFXgunflash, bGunFuncs, bOLA, bIniFailed, bVersionFailed,
-G_NoDensities, G_FixBicycleImpact, G_NoStencilShadows, G_OpenedHouses, G_TaxiLights, G_ParaLandingFix, G_NoEmergencyMisWanted,
+G_NoDensities, G_FixBicycleImpact, G_NoStencilShadows, G_OpenedHouses, G_TaxiLights, G_ParaLandingFix, G_NoEmergencyMisWanted, G_SCMfixes,
 G_NoGarageRadioChange, G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash, G_NoSamSite;
 
 int G_i, G_FPSlimit, G_ProcessPriority, G_FreezeWeather, G_CameraPhotoQuality, G_UseHighPedShadows, G_StreamMemory, G_Anisotropic, G_HowManyMinsInDay;
@@ -45,8 +45,7 @@ G_VehOccupDrawDist_Boat, G_BrakePower, G_BrakeMin, G_TireEff_DustLife, G_TireEff
 float G_TireEff_DustUpForce, G_TireSmk_UpForce, G_PedWeaponDrawDist, G_PedWeaponDrawDist_Final, G_PropCollDist_NEG, G_PropCollDist_POS,
 G_MediumGrassDistMult, G_FireCoronaSize, G_DistBloodpoolTex, G_RainGroundSplashNum, G_RainGroundSplashArea, G_RainGroundSplashArea_HALF, G_RoadblockSpawnDist,
 G_RoadblockSpawnDist_NEG, G_PedPopulationMult, G_VehPopulationMult, G_FxEmissionRateShare, G_GunflashEmissionMult, G_VehCamHeightOffset,
-G_ShadowsHeight, G_FxDistanceMult_A, G_FxDistanceMult_B, G_WaveLightingCamHei, G_WaveLightingMult, G_BoatFoamLightingFix, G_NoWavesIfCamHeight,
-G_WeaponRangeMult, G_WeaponRangeMult2, G_WeaponRangeMult3;
+G_ShadowsHeight, G_FxDistanceMult_A, G_FxDistanceMult_B, G_WaveLightingCamHei, G_WaveLightingMult, G_BoatFoamLightingFix, G_NoWavesIfCamHeight;
 float zero = 0.0;
 
 uintptr_t ORIGINAL_MirrorsCreateBuffer;
@@ -962,6 +961,7 @@ void ReadIni() {
 	G_NoGarageRadioChange = false;
 	G_NoEmergencyMisWanted = false;
 	G_NoTutorials = false;
+	G_SCMfixes = false;
 	if (!inSAMP) {
 
 		if (ReadIniBool(ini, &lg, "Gameplay", "ParaLandingFix")) {
@@ -974,6 +974,10 @@ void ReadIni() {
 
 		if (ReadIniBool(ini, &lg, "Gameplay", "NoEmergencyMisWanted")) {
 			G_NoEmergencyMisWanted = true;
+		}
+
+		if (ReadIniBool(ini, &lg, "Gameplay", "SCMfixes")) {
+			G_SCMfixes = true;
 		}
 
 		if (ReadIniBool(ini, &lg, "Gameplay", "NoFlyHeightLimit")) {
@@ -1392,14 +1396,14 @@ void ReadIni() {
 		});
 	}
 
-	if (!inSAMP && ReadIniFloat(ini, &lg, "Gameplay", "WeaponRangeMult", &f)) {
+	/*if (!inSAMP && ReadIniFloat(ini, &lg, "Gameplay", "WeaponRangeMult", &f)) {
 		G_WeaponRangeMult = f;
 		WriteMemory<float*>(0x73B421, &G_WeaponRangeMult, true);
 		G_WeaponRangeMult2 = f * 2.0f;
 		WriteMemory<float*>(0x73B40D, &G_WeaponRangeMult2, true);
 		G_WeaponRangeMult3 = f * 3.0f;
 		WriteMemory<float*>(0x73B41A, &G_WeaponRangeMult3, true);
-	}
+	}*/
 
 	if (!inSAMP && ReadIniFloat(ini, &lg, "Gameplay", "GetOffJetpackOnAir", &f)) {
 		MakeNOP(0x67E821, 17, true);
@@ -2143,7 +2147,7 @@ void ReadIni_BeforeFirstFrame() {
 		MakeCALL(0x730F9F, CustomMaxAnisotropic, true);
 	}
 
-	if (!bReloading && ReadIniInt(ini, &lg, "Graphics", "ForceHighMirrorRes", &i)) {
+	if (!bReloading && ReadIniBool(ini, &lg, "Graphics", "ForceHighMirrorRes")) {
 		ORIGINAL_MirrorsCreateBuffer = ReadMemory<uintptr_t>(0x72701D + 1, true);
 		ORIGINAL_MirrorsCreateBuffer += (GetGlobalAddress(0x72701D) + 5);
 		MakeCALL(0x72701D, ForceHighMirrorRes_MirrorsCreateBuffer, true);
@@ -2214,10 +2218,10 @@ void ReadIni_BeforeFirstFrame() {
 			IncreaseMemoryValueIfValid(0x43F928, (400 * i), 0x68, true);
 	}
 	if (ReadIniInt(ini, &lg, "Simple Limit Adjuster", "CarMatPipeDataPool", &i) && i > 0) {
-		IncreaseMemoryValueIfValid(0x5DA08D + 1, (4096 * 4), 0x68, true);
-		IncreaseMemoryValueIfValid(0x5DA0C9 + 1, (1024 * 4), 0x68, true);
-		IncreaseMemoryValueIfValid(0x5DA105 + 1, (4096 * 4), 0x68, true);
-	}
+		IncreaseMemoryValueIfValid(0x5DA08D + 1, (4096 * i), 0x68, true);
+		IncreaseMemoryValueIfValid(0x5DA0C9 + 1, (1024 * i), 0x68, true);
+		IncreaseMemoryValueIfValid(0x5DA105 + 1, (4096 * i), 0x68, true);
+	} 
 
 
 
