@@ -55,6 +55,8 @@ int numOldCfgNotFound = 0;
 string G_ReloadCommand;
 char G_NoMoneyZeros_Pos[] = "$%d";
 char G_NoMoneyZeros_Neg[] = "-$%d";
+float _flt_2_4 = 2.4f;
+float _flt_1_8 = 1.8f;
 
 CVehicle *secPlayerVehicle = nullptr;
 
@@ -1213,12 +1215,43 @@ void ReadIni() {
 	}
 
 	if (ReadIniBool(ini, &lg, "Gameplay", "FixMouseSensibility")) {
-		if (ReadMemory<uint32_t>(0x50F048, true) == 0xB6EC18) {
-			WriteMemory<uint32_t>(0x50F048, 0xB6EC1C, true);
-			WriteMemory<uint32_t>(0x50FB28, 0xB6EC1C, true);
-			WriteMemory<uint32_t>(0x510C28, 0xB6EC1C, true);
-			WriteMemory<uint32_t>(0x511E0A, 0xB6EC1C, true);
-			WriteMemory<uint32_t>(0x52228E, 0xB6EC1C, true);
+		if (ReadMemory<uint32_t>(0x005BC7B8, true) != 0x84) {
+			WriteMemory<float*>(0x0050FB06, &_flt_2_4, true);
+			WriteMemory<float*>(0x00510BBB, &_flt_1_8, true);
+			WriteMemory<float*>(0x00511DE4, &_flt_2_4, true);
+			WriteMemory<float*>(0x0052227F, &_flt_2_4, true);
+			WriteMemory<float*>(0x0050F022, &_flt_2_4, true);
+			if (ReadMemory<uint32_t>(0x50F048, true) == CCamera::m_fMouseAccelHorzntl)
+			{
+				WriteMemory<uint32_t>(0x0050F048, CCamera::m_fMouseAccelVertical, true);
+				WriteMemory<uint32_t>(0x0050FB28, CCamera::m_fMouseAccelVertical, true);
+				WriteMemory<uint32_t>(0x00510C28, CCamera::m_fMouseAccelVertical, true);
+				WriteMemory<uint32_t>(0x00511E0A, CCamera::m_fMouseAccelVertical, true);
+				WriteMemory<uint32_t>(0x0052228E, CCamera::m_fMouseAccelVertical, true);
+			}
+
+			WriteMemory<uint32_t>(0x005735E0, 0x00865450, true);
+
+			WriteMemory<uint32_t>(0x005BC7B4, 0x1F0F6666, true);
+			WriteMemory<uint32_t>(0x005BC7B8, 0x84, true);
+			WriteMemory<uint16_t>(0x005BC7BC, 0x0, true);
+
+			float hor = 0.0003125f + 0.0003125f / 2.0f;
+			while (hor <= CCamera::m_fMouseAccelHorzntl)
+			{
+				hor += (0.005f / 16.0f);
+			}
+			hor -= 0.0003125f / 2.0f;
+			if (hor != CCamera::m_fMouseAccelHorzntl)
+			{
+				CCamera::m_fMouseAccelHorzntl = hor;
+				FrontEndMenuManager.SaveSettings();
+			}
+			hor *= (0.0015f / 0.0025f);
+			CCamera::m_fMouseAccelVertical = hor;
+		}
+		else {
+			lg << "Warning: FixMouseSensibility ignored. Biaxial Mouse Sensitivity Option mod is already installed.\n";
 		}
 	}
 

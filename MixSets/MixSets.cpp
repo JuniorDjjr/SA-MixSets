@@ -19,12 +19,14 @@
 #include "CMessages.h"
 #include "CCamera.h"
 #include "CGame.h"
+#include "CMenuManager.h"
 #include "IMFX/Gunflashes.h"
 
 // Other
 #include "..\injector\assembly.hpp"
 #include "IniReader/IniReader.h"
 #include "TestCheat.h"
+#include "math.h"
 
 
 using namespace plugin;
@@ -60,7 +62,7 @@ public:
 	MixSets() {
 
 		lg.open("MixSets.log", fstream::out | fstream::trunc);
-		lg << "v4.1.4" << "\n";
+		lg << "v4.1.5" << "\n";
 		lg.flush();
 
 		bEnabled = false;
