@@ -47,6 +47,7 @@ G_MediumGrassDistMult, G_FireCoronaSize, G_DistBloodpoolTex, G_RainGroundSplashN
 G_RoadblockSpawnDist_NEG, G_PedPopulationMult, G_VehPopulationMult, G_FxEmissionRateShare, G_GunflashEmissionMult, G_VehCamHeightOffset,
 G_ShadowsHeight, G_FxDistanceMult_A, G_FxDistanceMult_B, G_WaveLightingCamHei, G_WaveLightingMult, G_BoatFoamLightingFix, G_NoWavesIfCamHeight;
 float zero = 0.0;
+float G_WeaponIconScaleFix = 47.0f;
 
 uintptr_t ORIGINAL_MirrorsCreateBuffer;
 
@@ -938,6 +939,15 @@ void ReadIni() {
 	}
 	else G_NoWavesIfCamHeight = -1.0f;
 
+	if (ReadIniFloat(ini, &lg, "Graphics", "NoWavesIfCamHeight", &f)) {
+		G_NoWavesIfCamHeight = f;
+	}
+	else G_NoWavesIfCamHeight = -1.0f;
+
+	if (ReadIniFloat(ini, &lg, "Graphics", "FOV", &f)) {
+		WriteMemory<float>(0x6FF41B, f, true);
+	}
+
 
 	// -- Gameplay
 
@@ -1438,11 +1448,11 @@ void ReadIni() {
 		WriteMemory<float*>(0x73B41A, &G_WeaponRangeMult3, true);
 	}*/
 
-	if (!inSAMP && ReadIniFloat(ini, &lg, "Gameplay", "GetOffJetpackOnAir", &f)) {
+	if (!inSAMP && ReadIniBool(ini, &lg, "Gameplay", "GetOffJetpackOnAir")) {
 		MakeNOP(0x67E821, 17, true);
 	}
 
-	if (!inSAMP && ReadIniFloat(ini, &lg, "Gameplay", "NoSamSite", &f)) {
+	if (!inSAMP && ReadIniBool(ini, &lg, "Gameplay", "NoSamSite")) {
 		WriteMemory<uint8_t>(0x5A07D0, 0xC3, true);
 		G_NoSamSite = true;
 	}
@@ -2295,6 +2305,12 @@ void ReadIni_BeforeFirstFrame() {
 			});
 		}
 		else G_VehPopulationMult = 1.0f;
+	}
+
+	// -- Interface
+	if (ReadIniBool(ini, &lg, "Interface", "WeaponIconScaleFix")) {
+		WriteMemory<float*>(0x58D94D, &G_WeaponIconScaleFix, true); //fist
+		WriteMemory<float*>(0x58D896, &G_WeaponIconScaleFix, true); //other
 	}
 
 
