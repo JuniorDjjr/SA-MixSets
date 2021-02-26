@@ -21,6 +21,7 @@
 #include "CGame.h"
 #include "CMenuManager.h"
 #include "IMFX/Gunflashes.h"
+#include "winnt.h"
 
 // Other
 #include "..\injector\assembly.hpp"
@@ -62,7 +63,7 @@ public:
 	MixSets() {
 
 		lg.open("MixSets.log", fstream::out | fstream::trunc);
-		lg << "v4.1.6" << "\n";
+		lg << "v4.1.7" << "\n";
 		lg.flush();
 
 		bEnabled = false;
