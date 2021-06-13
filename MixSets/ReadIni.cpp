@@ -30,7 +30,7 @@ using namespace std;
 int gameVersion;
 bool bEnabled, bReadOldINI, bParsePreserveComments, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIMFX, bIMFXgunflash, bGunFuncs, bOLA, bIniFailed, bVersionFailed,
 G_NoDensities, G_FixBicycleImpact, G_NoStencilShadows, G_OpenedHouses, G_TaxiLights, G_ParaLandingFix, G_NoEmergencyMisWanted, G_SCMfixes,
-G_NoGarageRadioChange, G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash, G_NoSamSite;
+G_NoGarageRadioChange, G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash, G_NoSamSite, G_LureRancher;
 
 int G_i, G_FPSlimit, G_ProcessPriority, G_FreezeWeather, G_CameraPhotoQuality, G_UseHighPedShadows, G_StreamMemory, G_Anisotropic, G_HowManyMinsInDay;
 
@@ -972,6 +972,7 @@ void ReadIni() {
 	G_ParaLandingFix = false;
 	G_NoGarageRadioChange = false;
 	G_NoEmergencyMisWanted = false;
+	G_LureRancher = false;
 	G_NoTutorials = false;
 	G_SCMfixes = false;
 	if (!inSAMP) {
@@ -990,6 +991,10 @@ void ReadIni() {
 
 		if (ReadIniBool(ini, &lg, "Gameplay", "SCMfixes")) {
 			G_SCMfixes = true;
+		}
+
+		if (ReadIniBool(ini, &lg, "Gameplay", "UseLureRancher")) {
+			G_LureRancher = true;
 		}
 
 		if (ReadIniBool(ini, &lg, "Gameplay", "NoFlyHeightLimit")) {
@@ -1458,6 +1463,9 @@ void ReadIni() {
 	}
 	else G_NoSamSite = false;
 
+	if (ReadIniBool(ini, &lg, "Gameplay", "SmoothAimIK")) {
+		injector::WriteMemory<float>(0x8D2E70, 0.1f, false);
+	}
 
 
 	// -- Densities

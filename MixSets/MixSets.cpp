@@ -47,7 +47,7 @@ languages lang;
 
 // External vars from ReadIni
 extern bool bEnabled, bReadOldINI, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIniFailed, bVersionFailed, bIMFX, bGunFuncs, bOLA, G_NoStencilShadows,
-G_OpenedHouses, G_TaxiLights, G_ParaLandingFix, G_NoGarageRadioChange, G_NoEmergencyMisWanted, G_SCMfixes,
+G_OpenedHouses, G_TaxiLights, G_ParaLandingFix, G_NoGarageRadioChange, G_NoEmergencyMisWanted, G_SCMfixes, G_LureRancher,
 G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash, G_NoSamSite;
 extern int G_i, numOldCfgNotFound, G_ProcessPriority, G_FreezeWeather, G_FPSlimit, G_UseHighPedShadows, G_StreamMemory,
 G_Anisotropic, G_HowManyMinsInDay;
@@ -63,7 +63,7 @@ public:
 	MixSets() {
 
 		lg.open("MixSets.log", fstream::out | fstream::trunc);
-		lg << "v4.1.7" << "\n";
+		lg << "v4.1.8" << "\n";
 		lg.flush();
 
 		bEnabled = false;
@@ -278,6 +278,28 @@ public:
 						}
 					}
 
+					if (G_LureRancher)
+					{
+						unsigned int script;
+						Command<GET_SCRIPT_STRUCT_NAMED>("DRIV6", &script);
+						if (script) {
+							unsigned char* offset = reinterpret_cast<CRunningScript*>(script)->m_pBaseIP;
+							offset += 4445;
+
+							uint32_t test = ReadMemory<uint16_t>(offset);
+							uint32_t test2 = ReadMemory<uint16_t>(offset + 9);
+							if (test == 489 && test2 == 489) { // default value: not yet fixed; valid script
+								WriteMemory<uint16_t>(offset, 505, false);
+								offset += 9;
+								WriteMemory<uint16_t>(offset, 505, false);
+								offset += 47;
+								WriteMemory<uint16_t>(offset, 505, false);
+								offset += 8385;
+								WriteMemory<uint16_t>(offset, 505, false);
+							}
+						}
+					}
+
 					if (G_NoGarageRadioChange) {
 						unsigned int script;
 						Command<GET_SCRIPT_STRUCT_NAMED>("CARMOD", &script);
@@ -400,8 +422,8 @@ public:
 
 					ReadIni_BeforeFirstFrame();
 					ReadIni();
-					bProcessOnceOnScripts = true;
 					bProcessOnceAfterIntro = true;
+					bProcessOnceOnScripts = true;
 
 					bReloading = false;
 				}
@@ -430,7 +452,7 @@ public:
 
 		};
 
-		Events::onPauseAllSounds += []
+		Events::onPauseAllSounds += [] 
 		{
 			lg.flush();
 			if (G_ProcessPriority > 0)
