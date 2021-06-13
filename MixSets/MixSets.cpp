@@ -48,7 +48,7 @@ languages lang;
 // External vars from ReadIni
 extern bool bEnabled, bReadOldINI, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIniFailed, bVersionFailed, bIMFX, bGunFuncs, bOLA, G_NoStencilShadows,
 G_OpenedHouses, G_TaxiLights, G_ParaLandingFix, G_NoGarageRadioChange, G_NoEmergencyMisWanted, G_SCMfixes, G_LureRancher,
-G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash, G_NoSamSite;
+G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash, G_NoSamSite, G_SmoothAimIK;
 extern int G_i, numOldCfgNotFound, G_ProcessPriority, G_FreezeWeather, G_FPSlimit, G_UseHighPedShadows, G_StreamMemory,
 G_Anisotropic, G_HowManyMinsInDay;
 extern string G_ReloadCommand;
@@ -63,7 +63,7 @@ public:
 	MixSets() {
 
 		lg.open("MixSets.log", fstream::out | fstream::trunc);
-		lg << "v4.1.8" << "\n";
+		lg << "v4.2" << "\n";
 		lg.flush();
 
 		bEnabled = false;
@@ -177,6 +177,20 @@ public:
 							}
 						}
 						playerId++;
+					}
+				}
+
+				if (G_SmoothAimIK)
+				{
+					// the movement is weird when starting to aim while running
+					// not the best solution, but anyway
+					if (playerPed->m_nMoveState <= 4)
+					{
+						injector::WriteMemory<float>(0x8D2E70, 0.15f, false);
+					}
+					else
+					{
+						injector::WriteMemory<float>(0x8D2E70, 1.5f, false);
 					}
 				}
 
