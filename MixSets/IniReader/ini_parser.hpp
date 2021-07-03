@@ -38,9 +38,7 @@
 #include <sstream>
 #include <fstream>
 
-// EDITED FOR MIXSETS - START
-extern bool bParsePreserveComments;
-// EDITED FOR MIXSETS - END
+#include "..\MixSets.h"
 
 namespace linb
 {
@@ -249,7 +247,7 @@ namespace linb
 
 					// EDITED FOR MIXSETS - START
 
-					if (!bParsePreserveComments) {
+					if (!MixSets::bParsePreserveComments) {
 						if ((pos = line.find_first_of('#')) != line.npos)
 							line.erase(pos);
 

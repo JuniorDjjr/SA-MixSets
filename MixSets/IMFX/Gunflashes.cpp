@@ -14,6 +14,8 @@ If you consider fixing something here, you should also consider fixing there: ht
 #include <fstream>
 #include <string>
 
+#include "..\MixSets.h"
+
 using namespace plugin;
 
 //RwMatrix Gunflashes::matrixAry[20];
@@ -22,8 +24,6 @@ PedExtendedData<Gunflashes::PedExtension> Gunflashes::pedExt;
 //std::vector<GunflashInfo> Gunflashes::gunflashInfos;
 bool Gunflashes::bLeftHand = false;
 bool Gunflashes::bVehicleGunflash = false;
-
-extern float G_GunflashEmissionMult;
 
 Gunflashes::PedExtension::PedExtension(CPed *) {
 	bLeftHandGunflashThisFrame = false;
@@ -119,7 +119,7 @@ void __fastcall Gunflashes::MyTriggerGunflash(Fx_c *fx, int, CEntity *entity, CV
             fx->CreateMatFromVec(&fxMat, &origin, &target);
             RwV3d offset = { 0.0f, 0.0f, 0.0f };
             FxSystem_c *gunflashFx = g_fxMan.CreateFxSystem("gunflash", &offset, &fxMat, false);
-			if (G_GunflashEmissionMult > -1.0f) gunflashFx->SetRateMult(G_GunflashEmissionMult);
+			if (MixSets::G_GunflashEmissionMult > -1.0f) gunflashFx->SetRateMult(MixSets::G_GunflashEmissionMult);
             if (gunflashFx) {
                 gunflashFx->CopyParentMatrix();
                 gunflashFx->PlayAndKill();
@@ -172,7 +172,7 @@ void Gunflashes::CreateGunflashEffectsForPed(CPed *ped) {
                 memcpy(mat, boneMat, sizeof(RwMatrix));
 				RwMatrixUpdate(mat);
 				FxSystem_c *gunflashFx = g_fxMan.CreateFxSystem(fxName, &offset, mat, true);
-				if (G_GunflashEmissionMult > -1.0f) gunflashFx->SetRateMult(G_GunflashEmissionMult);
+				//if (MixSets::G_GunflashEmissionMult > -1.0f) gunflashFx->SetRateMult(MixSets::G_GunflashEmissionMult);
                 if (gunflashFx) {
 					if (ped->m_nPedFlags.bInVehicle) gunflashFx->m_pParentMatrix = boneMat;
                     RwMatrixRotate(&gunflashFx->m_localMatrix, &axis_z, -90.0f, rwCOMBINEPRECONCAT);

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.136
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31112.23
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MixSets", "MixSets\MixSets.vcxproj", "{B212DDA4-2A8E-45B2-914D-7BEEB31D06B1}"
 EndProject
@@ -20,6 +20,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {80633917-7411-4A52-B43B-A5FB3B67AF0D}
+		SolutionGuid = {773E9988-2458-40BE-9B22-A185EACC70FF}
 	EndGlobalSection
 EndGlobal

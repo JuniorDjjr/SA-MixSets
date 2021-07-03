@@ -8,24 +8,14 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="IniReader">
-      <UniqueIdentifier>{61c0165f-3c9c-4a26-b1e1-772c0c635dee}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="IMFX">
-      <UniqueIdentifier>{e3d921be-c57d-4501-bd4c-8e6628f2b80e}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
+    <ClInclude Include="MixSets.h" />
+    <ClInclude Include="ReadIni.h" />
     <ClInclude Include="IniReader\ini_parser.hpp">
       <Filter>IniReader</Filter>
     </ClInclude>
     <ClInclude Include="IniReader\IniReader.h">
       <Filter>IniReader</Filter>
     </ClInclude>
-    <ClInclude Include="ReadIni.h" />
-    <ClInclude Include="Common.h" />
-    <ClInclude Include="MixSets.h" />
-    <ClInclude Include="TestCheat.h" />
     <ClInclude Include="IMFX\Gunflashes.h">
       <Filter>IMFX</Filter>
     </ClInclude>
@@ -34,7 +24,11 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="_.txt" />
-    <Text Include="Changes.txt" />
+    <Filter Include="IniReader">
+      <UniqueIdentifier>{5dce5427-afb5-4cc1-86e4-0afdc0d7c2b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IMFX">
+      <UniqueIdentifier>{b2c91cb5-70b2-4e69-a437-218e96d0c599}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>
