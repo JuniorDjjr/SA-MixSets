@@ -35,7 +35,7 @@ class MixSets mixSets;
 MixSets::MixSets()
 {
 	lg.open("MixSets.log", fstream::out | fstream::trunc);
-	lg << "v4.3" << "\n";
+	lg << "v4.3.2" << "\n";
 	lg.flush();
 	 
 
@@ -94,28 +94,40 @@ MixSets::MixSets()
 		else bNoCLEO = false;
 
 		if (GetModuleHandleA("SAMP.dll")) {
-			lg << "SAMP = true" << "\n\n";
+			lg << "SAMP = true" << "\n";
 			inSAMP = true;
 		}
 		else inSAMP = false;
 
 		if (GetModuleHandleA("IMFX.asi")) {
-			lg << "IMFX = true" << "\n\n";
+			lg << "IMFX = true" << "\n";
 			bIMFX = true;
 		}
 		else bIMFX = false;
 
 		if (GetModuleHandleA("GunFuncs.asi")) {
-			lg << "GunFuncs = true" << "\n\n";
+			lg << "GunFuncs = true" << "\n";
 			bGunFuncs = true;
 		}
 		else bGunFuncs = false;
 
 		if (GetModuleHandleA("III.VC.SA.LimitAdjuster.asi")) {
-			lg << "Open Limit Adjuster = true" << "\n\n";
+			lg << "Open Limit Adjuster = true" << "\n";
 			bOLA = true;
 		}
 		else bOLA = false;
+
+		hVehFuncs = GetModuleHandleA("VehFuncs.asi");
+		if (hVehFuncs) {
+			lg << "VehFuncs = true" << "\n";
+			bVehFuncs = true;
+			pVehFuncs_Ext_GetDoubleWheelOffset = (VehFuncs_Ext_GetDoubleWheelOffset)GetProcAddress(hVehFuncs, "Ext_GetDoubleWheelOffset");
+		}
+		else {
+			bVehFuncs = false;
+			pVehFuncs_Ext_GetDoubleWheelOffset = NULL;
+		}
+		lg << "\n";
 
 		ReadIni_BeforeFirstFrame();
 
@@ -428,6 +440,16 @@ MixSets::MixSets()
 						}
 					}
 				}
+
+				if (G_TuningChoose2colors)
+				{
+					unsigned int script;
+					Command<GET_SCRIPT_STRUCT_NAMED>("CARMOD", &script);
+					if (script)
+					{
+						*(CTheScripts::ScriptSpace + (10443 * 4)) = 2;
+					}
+				}
 			}
 
 			if (bProcessOnceOnScripts)
@@ -497,7 +519,6 @@ MixSets::MixSets()
 			}
 		}
 	};
-
 
 	Events::vehicleRenderEvent += [](CVehicle* vehicle) {
 
@@ -848,6 +869,58 @@ void MixSets::VehFlipDamage_Process(CVehicle* veh)
 				if (veh->m_apPassengers[i] > 0) MixSets::VehFlipDamage_Process_Damage(veh->m_apPassengers[i]);
 			}
 		}
+	}
+}
+
+void __fastcall PreRender_AddSingleWheelParticles_FixDouble(CVehicle* _this, int a, int wheelState, int a3, float a4, float a5, CColPoint* colPoint, CVector* from, int a8, signed int wheelId, int skidMarkType, bool *_bloodState, char flags)
+{
+	_this->AddSingleWheelParticles(wheelState, a3, a4, a5, colPoint, from, a8, wheelId, skidMarkType, _bloodState, flags);
+
+	//1 = rear left
+	//3 = rear right
+	//5 = rear m left
+	//6 = rear m right
+	if (_this->m_pHandlingData->m_bDoubleRwheels && (wheelId == 1 || wheelId == 3 || wheelId == 5 || wheelId == 6))
+	{
+		CColPoint *colPoint2 = new CColPoint(*colPoint);
+		float distance = 0.45f;
+
+		bool left = (wheelId == 3 || wheelId == 6);
+
+		if (MixSets::pVehFuncs_Ext_GetDoubleWheelOffset != NULL)
+		{
+			distance = (MixSets::pVehFuncs_Ext_GetDoubleWheelOffset)(_this, (int)left);
+		}
+
+		if (left)
+		{
+			distance *= -1.0f;
+		}
+
+		CVector pos1;
+		pos1.x = from->x;
+		pos1.y = from->y;
+		pos1.z = from->z;
+
+		CMatrixLink* matrix = _this->GetMatrix();
+
+		pos1.x = matrix->right.x * distance;
+		pos1.y = matrix->right.y * distance;
+		pos1.z = matrix->right.z * distance;
+
+		colPoint2->m_vecPoint.x = pos1.x;
+		colPoint2->m_vecPoint.y = pos1.y;
+		colPoint2->m_vecPoint.z = pos1.z;
+
+		pos1.x += from->x;
+		pos1.y += from->y;
+		pos1.z += from->z;
+
+		colPoint2->m_vecPoint.x += colPoint->m_vecPoint.x;
+		colPoint2->m_vecPoint.y += colPoint->m_vecPoint.y;
+		colPoint2->m_vecPoint.z += colPoint->m_vecPoint.z;
+
+		_this->AddSingleWheelParticles(wheelState, a3, a4, a5, colPoint2, &pos1, a8, wheelId + 69696969, skidMarkType, _bloodState, flags);
 	}
 }
 

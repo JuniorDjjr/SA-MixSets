@@ -29,10 +29,10 @@ public:
 
 
 	static inline int gameVersion;
-	static inline bool bEnabled, bReadOldINI, bParsePreserveComments, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIMFX, bIMFXgunflash, bGunFuncs, bOLA, bIniFailed, bVersionFailed,
+	static inline bool bEnabled, bReadOldINI, bParsePreserveComments, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIMFX, bIMFXgunflash, bGunFuncs, bOLA, bVehFuncs, bIniFailed, bVersionFailed,
 		G_NoDensities, G_FixBicycleImpact, G_NoStencilShadows, G_OpenedHouses, G_TaxiLights, G_ParaLandingFix, G_NoEmergencyMisWanted, G_SCMfixes,
 		G_NoGarageRadioChange, G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash, G_NoSamSite, G_LureRancher,
-		G_SmoothAimIK, G_StaticPedShadOnBike;
+		G_SmoothAimIK, G_StaticPedShadOnBike, G_TuningChoose2colors;
 
 	static inline int G_i, G_FPSlimit, G_ProcessPriority, G_FreezeWeather, G_CameraPhotoQuality, G_UseHighPedShadows, G_StreamMemory, G_Anisotropic, G_HowManyMinsInDay;
 
@@ -50,6 +50,10 @@ public:
 		G_ShadowsHeight, G_FxDistanceMult_A, G_FxDistanceMult_B, G_WaveLightingCamHei, G_WaveLightingMult, G_BoatFoamLightingFix, G_NoWavesIfCamHeight;
 	static inline float zero;
 	static inline float G_WeaponIconScaleFix;
+
+	static inline HMODULE hVehFuncs;
+	typedef float(__cdecl* VehFuncs_Ext_GetDoubleWheelOffset)(CVehicle*, int);
+	static inline VehFuncs_Ext_GetDoubleWheelOffset pVehFuncs_Ext_GetDoubleWheelOffset;
 
 	static inline DWORD _EAX;
 
@@ -96,6 +100,7 @@ public:
 	static void VehFlipDamage_Process(CVehicle* veh);
 };
 
+void __fastcall PreRender_AddSingleWheelParticles_FixDouble(CVehicle* _this, int a, int wheelState, int a3, float a4, float a5, CColPoint* colPoint, CVector* from, int id, signed int wheelId, int skidMarkType, bool *_bloodState, char a12);
 void __declspec() PedWeaponDrawDist_ASM();
 void __declspec() PedWeaponDrawDist_ASM();
 void __declspec() VehFlipDamage_ASM();
