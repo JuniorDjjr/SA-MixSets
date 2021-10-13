@@ -35,7 +35,7 @@ class MixSets mixSets;
 MixSets::MixSets()
 {
 	lg.open("MixSets.log", fstream::out | fstream::trunc);
-	lg << "v4.3.2" << "\n";
+	lg << "v4.3.3" << "\n";
 	lg.flush();
 	 
 
@@ -44,10 +44,8 @@ MixSets::MixSets()
 
 	Read = false;
 
+	G_WeaponIconScaleFix = 47.0f;
 	G_VehFlipDamage = 0.1f;
-
-	RETURN_FixMouseStuck = 0x74542B;
-	altRETURN_FixMouseStuck = 0x745433;
 
 	forceUpdateQualityFuncs = true;
 	bProcessOnceOnScripts = false;
@@ -64,7 +62,6 @@ MixSets::MixSets()
 	numOldCfgNotFound = 0;
 
 	zero = 0.0;
-	G_WeaponIconScaleFix = 47.0f;
 
 	_flt_2_4 = 2.4f;
 	_flt_1_8 = 1.8f;
@@ -79,9 +76,9 @@ MixSets::MixSets()
 
 	if (ReadMemory<uint8_t>(0x400088, true) != 0xCA)
 	{
-		lg << "ERROR: Game version not supported. Download GTA SA Crack 1.0 US." << "\n\n";
+		lg << "ERROR: Game version not supported. Download GTA SA Crack 1.0." << "\n\n";
 		lg.flush();
-		MessageBoxA(0, "Game version not supported. Download GTA SA Crack 1.0 US.", "MixSets", 0);
+		MessageBoxA(0, "Game version not supported. Download GTA SA Crack 1.0.", "MixSets", 0);
 		return;
 	}
 
@@ -880,7 +877,7 @@ void __fastcall PreRender_AddSingleWheelParticles_FixDouble(CVehicle* _this, int
 	//3 = rear right
 	//5 = rear m left
 	//6 = rear m right
-	if (_this->m_pHandlingData->m_bDoubleRwheels && (wheelId == 1 || wheelId == 3 || wheelId == 5 || wheelId == 6))
+	if (_this->m_pHandlingData->m_nModelFlags.m_bDoubleRwheels && (wheelId == 1 || wheelId == 3 || wheelId == 5 || wheelId == 6))
 	{
 		CColPoint *colPoint2 = new CColPoint(*colPoint);
 		float distance = 0.45f;

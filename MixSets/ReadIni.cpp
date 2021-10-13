@@ -140,7 +140,7 @@ void MixSets::ReadIni_BeforeFirstFrame()
 			//mov     ecx, [esp+4]
 			regs.eax = *(DWORD*)(regs.esp + 0x8);
 			regs.ecx = *(DWORD*)(regs.esp + 0x4);
-			if (GetFocus() == *(HWND*)0xC97C1C)
+			if (GetForegroundWindow() == *(HWND*)0xC97C1C)
 			{
 				*(uintptr_t*)(regs.esp - 0x4) = 0x74542B;
 			}
@@ -361,6 +361,16 @@ void MixSets::ReadIni_BeforeFirstFrame()
 	if (ReadIniBool(ini, &lg, "Interface", "WeaponIconScaleFix")) {
 		WriteMemory<float*>(0x58D94D, &G_WeaponIconScaleFix, true); //fist
 		WriteMemory<float*>(0x58D896, &G_WeaponIconScaleFix, true); //other
+	}
+
+	if (ReadIniFloat(ini, &lg, "Interface", "VehColorGridSize", &f)) {
+		G_VehColorGridSize = f;
+		injector::MakeInline<0x582356, 0x582356 + 6>([](injector::reg_pack& regs)
+		{
+			//mov     [eax+3FCh], ecx
+			float *width = reinterpret_cast<float*>(&regs.ecx); 
+			*(float*)(regs.eax + 0x3FC) = *width * G_VehColorGridSize;
+		});
 	}
 
 

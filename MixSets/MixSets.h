@@ -47,8 +47,8 @@ public:
 	static inline float G_TireEff_DustUpForce, G_TireSmk_UpForce, G_PedWeaponDrawDist, G_PedWeaponDrawDist_Final, G_PropCollDist_NEG, G_PropCollDist_POS,
 		G_MediumGrassDistMult, G_FireCoronaSize, G_DistBloodpoolTex, G_RainGroundSplashNum, G_RainGroundSplashArea, G_RainGroundSplashArea_HALF, G_RoadblockSpawnDist,
 		G_RoadblockSpawnDist_NEG, G_PedPopulationMult, G_VehPopulationMult, G_FxEmissionRateShare, G_GunflashEmissionMult, G_VehCamHeightOffset,
-		G_ShadowsHeight, G_FxDistanceMult_A, G_FxDistanceMult_B, G_WaveLightingCamHei, G_WaveLightingMult, G_BoatFoamLightingFix, G_NoWavesIfCamHeight;
-	static inline float zero;
+		G_ShadowsHeight, G_FxDistanceMult_A, G_FxDistanceMult_B, G_WaveLightingCamHei, G_WaveLightingMult, G_BoatFoamLightingFix, G_NoWavesIfCamHeight, G_VehColorGridSize;
+	static inline float zero, fTest;
 	static inline float G_WeaponIconScaleFix;
 
 	static inline HMODULE hVehFuncs;
