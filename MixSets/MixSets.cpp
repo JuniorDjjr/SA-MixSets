@@ -35,7 +35,7 @@ class MixSets mixSets;
 MixSets::MixSets()
 {
 	lg.open("MixSets.log", fstream::out | fstream::trunc);
-	lg << "v4.3.3" << "\n";
+	lg << "v4.3.4" << "\n";
 	lg.flush();
 	 
 
@@ -869,9 +869,9 @@ void MixSets::VehFlipDamage_Process(CVehicle* veh)
 	}
 }
 
-void __fastcall PreRender_AddSingleWheelParticles_FixDouble(CVehicle* _this, int a, int wheelState, int a3, float a4, float a5, CColPoint* colPoint, CVector* from, int a8, signed int wheelId, int skidMarkType, bool *_bloodState, char flags)
+void __fastcall PreRender_AddSingleWheelParticles_FixDouble(CVehicle* _this, int a, int wheelState, int a3, float a4, float a5, CColPoint* colPoint, CVector* from, int id, signed int wheelId, int skidMarkType, bool *_bloodState, char flags)
 {
-	_this->AddSingleWheelParticles(wheelState, a3, a4, a5, colPoint, from, a8, wheelId, skidMarkType, _bloodState, flags);
+	_this->AddSingleWheelParticles(wheelState, a3, a4, a5, colPoint, from, id, wheelId, skidMarkType, _bloodState, flags);
 
 	//1 = rear left
 	//3 = rear right
@@ -917,7 +917,7 @@ void __fastcall PreRender_AddSingleWheelParticles_FixDouble(CVehicle* _this, int
 		colPoint2->m_vecPoint.y += colPoint->m_vecPoint.y;
 		colPoint2->m_vecPoint.z += colPoint->m_vecPoint.z;
 
-		_this->AddSingleWheelParticles(wheelState, a3, a4, a5, colPoint2, &pos1, a8, wheelId + 69696969, skidMarkType, _bloodState, flags);
+		_this->AddSingleWheelParticles(wheelState, a3, a4, a5, colPoint2, &pos1, id, wheelId + 69696969, skidMarkType, _bloodState, flags);
 	}
 }
 

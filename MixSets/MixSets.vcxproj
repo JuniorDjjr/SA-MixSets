@@ -42,15 +42,15 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='GTASA Release|Win32'">
-    <OutDir>G:\GTA San Andreas Remaster\modloader\MixSets\</OutDir>
+    <OutDir>G:\GTA SA The Modded Edition\modloader\MixSets\</OutDir>
     <IntDir>$(ProjectDir).obj\GTASA\Release\</IntDir>
     <TargetName>MixSets</TargetName>
     <TargetExt>.asi</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='GTASA zDebug|Win32'">
-    <OutDir>G:\GTA San Andreas Remaster\modloader\MixSets\</OutDir>
+    <OutDir>G:\GTA SA The Modded Edition\modloader\MixSets\</OutDir>
     <IntDir>$(ProjectDir).obj\GTASA\Debug\</IntDir>
-    <TargetName>MixSets_d</TargetName>
+    <TargetName>MixSets</TargetName>
     <TargetExt>.asi</TargetExt>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='GTASA Release|Win32'">

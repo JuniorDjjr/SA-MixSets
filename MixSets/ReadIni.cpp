@@ -827,7 +827,7 @@ void MixSets::ReadIni()
 
 	if (!inSAMP && ReadIniInt(ini, &lg, "Graphics", "BulletTraceAlpha", &i)) {
 		WriteMemory<uint8_t>(0x726CDD + 1, i, true);
-		i = i * 2.142857f;
+		i *= 2.142857f;
 		if (i > 255) i = 255;
 		WriteMemory<uint32_t>(0x73AFAD + 1, i, true);
 	}
@@ -1187,11 +1187,6 @@ void MixSets::ReadIni()
 		WriteMemory<uint32_t>(0x630D75, i, true);
 	}
 
-	if (ReadIniFloat(ini, &lg, "Gameplay", "VehElevatorSpeed", &f)) {
-		if (inSAMP && f > 10.0f) f = 10.0f;
-		WriteMemory<float>(0x871008, f, false);
-	}
-
 	if (ReadIniBool(ini, &lg, "Gameplay", "NoWheelTurnBack")) {
 		MakeNOP(0x6B5579, 6, true);
 		MakeNOP(0x6B568A, 6, true);
@@ -1464,8 +1459,8 @@ void MixSets::ReadIni()
 
 	if (!inSAMP && ReadIniInt(ini, &lg, "Gameplay", "SniperBulletLife", &i)) {
 		WriteMemory<uint32_t>(0x7360A2, i, true); //1000
-		WriteMemory<uint32_t>(0x73AFB3, (i * 0.75f), true); //750
-		WriteMemory<uint32_t>(0x726CE2, (i * 0.3f), true); //300
+		WriteMemory<uint32_t>(0x73AFB3, (uint32_t)(i * 0.75f), true); //750
+		WriteMemory<uint32_t>(0x726CE2, (uint32_t)(i * 0.3f), true); //300
 	}
 
 	if (!inSAMP && ReadIniInt(ini, &lg, "Gameplay", "RocketLife", &i)) {
@@ -1691,13 +1686,13 @@ void MixSets::ReadIni()
 				WriteMemory<float>(0x86C850, f, true);
 			}
 
-			if (ReadIniFloat(ini, &lg, "Densities", "TowelSpawnOnScr", &f)) {
+			if (ReadIniFloat(ini, &lg, "Densities", "TowelDespawnOnScr", &f)) {
 				WriteMemory<float>(0x86D288, f, true);
 			}
 
-			if (ReadIniFloat(ini, &lg, "Densities", "TowelSpawnOffScr", &f)) {
-				G_TowelSpawnOffScr = f;
-				WriteMemory<float*>(0x615E81 + 2, &G_TowelSpawnOffScr, true);
+			if (ReadIniFloat(ini, &lg, "Densities", "TowelDespawnOffScr", &f)) {
+				G_TowelDespawnOffScr = f;
+				WriteMemory<float*>(0x615E81 + 2, &G_TowelDespawnOffScr, true);
 			}
 
 			if (ReadIniFloat(ini, &lg, "Densities", "TrainSpawnDistance", &f)) {

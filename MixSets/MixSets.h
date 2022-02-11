@@ -38,7 +38,7 @@ public:
 
 	static inline float G_f, G_CullDistNormalComps, G_CullDistBigComps, G_VehLodDist, G_VehDrawDist, G_PedDrawDist, G_VehMultiPassDist, G_GangWaveMinSpawnDist,
 		G_VehBulletDamage, G_VehFireDamage, G_VehExploDamage, G_HeliRotorSpeed, G_PedDensityExt, G_PedDensityInt, G_VehDensity,
-		G_VehDespawnOnScr, G_PedDespawnOnScr, G_PedDespawnOffScr, G_TowelSpawnOffScr, G_TrainSpawnDistance, G_ShadDist_Vehicles,
+		G_VehDespawnOnScr, G_PedDespawnOnScr, G_PedDespawnOffScr, G_TowelDespawnOffScr, G_TrainSpawnDistance, G_ShadDist_Vehicles,
 		G_ShadDist_Vehicles_Sqr, G_ShadDist_SmallPlanes, G_ShadDist_SmallPlanes_Sqr, G_ShadDist_BigPlanes, G_ShadDist_BigPlanes_Sqr;
 	static inline float G_ShadDist_CarLight, G_ShadDist_CarLight_Sqr, G_ShadDist_CarLight_Mid, G_ShadDist_CarLight_Min, G_ShadDist_CarLight_Scale,
 		G_FootstepsDist, G_PickupsDrawDist, G_CarPedImpact, G_BikePedImpact, Default_BikePedImpact, Default_CarPedImpact,
