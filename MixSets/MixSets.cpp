@@ -35,7 +35,7 @@ class MixSets mixSets;
 MixSets::MixSets()
 {
 	lg.open("MixSets.log", fstream::out | fstream::trunc);
-	lg << "v4.3.4" << "\n";
+	lg << "v4.3.5" << "\n";
 	lg.flush();
 	 
 
@@ -801,15 +801,17 @@ bool MixSets::ReadIniBool(CIniReader ini, fstream* lg, string section, string ke
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MixSets::IncreaseMemoryValueIfValid(uintptr_t address, int32_t value, uint8_t validation, bool vp)
+bool MixSets::IncreaseMemoryValueIfValid(uintptr_t address, int32_t value, uint8_t validation, bool vp)
 {
-	if (ReadMemory<uint8_t>(address - 1, vp) != validation) return;
+	if (ReadMemory<uint8_t>(address - 1, vp) != validation) return false;
 	if (ReadMemory<int32_t>(address, vp) < value) WriteMemory<int32_t>(address, value, vp);
+	return true;
 }
-void MixSets::IncreaseMemoryValueIfValid_Byte(uintptr_t address, int8_t value, uint8_t validation, bool vp)
+bool MixSets::IncreaseMemoryValueIfValid_Byte(uintptr_t address, int8_t value, uint8_t validation, bool vp)
 {
-	if (ReadMemory<uint8_t>(address - 1, vp) != validation) return;
+	if (ReadMemory<uint8_t>(address - 1, vp) != validation) return false;
 	if (ReadMemory<int8_t>(address, vp) < value) WriteMemory<int8_t>(address, value, vp);
+	return true;
 }
 
 uint8_t MixSets::CustomMaxAnisotropic()

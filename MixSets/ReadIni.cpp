@@ -10,6 +10,8 @@
 #include "CMenuManager.h"
 #include "CWeather.h"
 #include "eAnimations.h"
+#include "CEntryExit.h"
+#include "CAnimManager.h"
 
 using namespace plugin;
 using namespace injector;
@@ -327,7 +329,12 @@ void MixSets::ReadIni_BeforeFirstFrame()
 
 		if (ReadIniInt(ini, &lg, "Densities", "DesiredLoadedVeh", &i)) {
 			WriteMemory<uint32_t>(0x8A5A84, i, false);
-			if (!bOLA) IncreaseMemoryValueIfValid_Byte(0x5B8FE3 + 1, (i * 5), 0x6A, true); // Note: if 12 (default), it will increase the VehicleStructs from 50 to 60 (kepping a margin)
+			if (!bOLA) {
+				if (IncreaseMemoryValueIfValid_Byte(0x5B8FE3 + 1, (i * 5), 0x6A, true)) // Note: if 12 (default), it will increase the VehicleStructs from 50 to 60 (kepping a margin)
+				{
+					MakeNOP(0x5BCD9C, 5); // don't read value from stream.ini
+				}
+			}
 		}
 
 		if (ReadIniInt(ini, &lg, "Densities", "DelayLoadDesiredVeh", &i)) {
@@ -1371,6 +1378,32 @@ void MixSets::ReadIni()
 		WriteMemory<uint32_t>(0x5FC992, 0x1F0F01B0, true);
 		WriteMemory<uint8_t>(0x5FC996, 0, true);
 	}
+
+	if (ReadIniBool(ini, &lg, "Gameplay", "Fix247Randomness")) {
+		injector::MakeInline<0x59A797, 0x59A797 + 6>([](injector::reg_pack& regs)
+		{
+			*(uint16_t*)(regs.esi + 0x790) = (uint16_t)regs.eax; //mov     [esi+790h], al
+
+			float x = 0.0f;
+			float y = 0.0f;
+			float z = 0.0f;
+
+			CPlayerPed *playa = FindPlayerPed(-1);
+			if (playa && playa->m_pEnex) {
+				CEntryExit *enex = (CEntryExit * )playa->m_pEnex;
+				x = enex->m_recEntrance.left;
+				y = enex->m_recEntrance.top;
+				z = enex->m_fEntranceZ;
+			}
+			else {
+				x = *(float*)(regs.esi + 0x400);
+				y = *(float*)(regs.esi + 0x404);
+				z = *(float*)(regs.esi + 0x408);
+			}
+			int seed = (int)(x + y * (z + 123.5f));
+			Call<0x821B11, int>(seed); //srand
+		});
+	}
 	 
 	if (ReadIniBool(ini, &lg, "Gameplay", "FixBoatRadioAnim")) {
 		injector::MakeInline<0x6DF4E7, 0x6DF4E7 + 5>([](injector::reg_pack& regs)
@@ -1380,7 +1413,7 @@ void MixSets::ReadIni()
 				regs.eax = 0;
 			}
 			else {
-				regs.eax = (uint32_t)RpAnimBlendClumpGetAssociation(driver->m_pRwClump, ANIM_DEFAULT_CAR_TUNE_RADIO);
+				regs.eax = (uint32_t)CAnimManager::BlendAnimation(driver->m_pRwClump, 0, ANIM_DEFAULT_CAR_TUNE_RADIO, 4.0);
 			}
 			*(uintptr_t*)(regs.esp - 0x4) = 0x6DF4FC;
 		});
