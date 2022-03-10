@@ -328,12 +328,16 @@ void MixSets::ReadIni_BeforeFirstFrame()
 		}
 
 		if (ReadIniInt(ini, &lg, "Densities", "DesiredLoadedVeh", &i)) {
+			bOutdatedDesiredLoadedVeh = true;
+		}
+
+		if (ReadIniInt(ini, &lg, "Densities", "NumDesiredLoadedVeh", &i)) {
+			bOutdatedDesiredLoadedVeh = false;
 			WriteMemory<uint32_t>(0x8A5A84, i, false);
+			WriteMemory<uint32_t>(0x5B8E6E + 6, i, true);
+			MakeNOP(0x5BCD9C, 5); // don't read value from stream.ini
 			if (!bOLA) {
-				if (IncreaseMemoryValueIfValid_Byte(0x5B8FE3 + 1, (i * 5), 0x6A, true)) // Note: if 12 (default), it will increase the VehicleStructs from 50 to 60 (kepping a margin)
-				{
-					MakeNOP(0x5BCD9C, 5); // don't read value from stream.ini
-				}
+				IncreaseMemoryValueIfValid_Byte(0x5B8FE3 + 1, (i * 3), 0x6A, true); // Note: if 22 (default), it will increase the VehicleStructs from 50 to 66 (kepping a margin)
 			}
 		}
 

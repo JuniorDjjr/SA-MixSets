@@ -29,7 +29,7 @@ public:
 
 
 	static inline int gameVersion;
-	static inline bool bEnabled, bReadOldINI, bParsePreserveComments, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIMFX, bIMFXgunflash, bGunFuncs, bOLA, bVehFuncs, bIniFailed, bVersionFailed,
+	static inline bool bEnabled, bReadOldINI, bParsePreserveComments, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIMFX, bIMFXgunflash, bGunFuncs, bOLA, bVehFuncs, bIniFailed, bVersionFailed, bOutdatedDesiredLoadedVeh,
 		G_NoDensities, G_FixBicycleImpact, G_NoStencilShadows, G_OpenedHouses, G_TaxiLights, G_ParaLandingFix, G_NoEmergencyMisWanted, G_SCMfixes,
 		G_NoGarageRadioChange, G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash, G_NoSamSite, G_LureRancher,
 		G_SmoothAimIK, G_StaticPedShadOnBike, G_TuningChoose2colors;

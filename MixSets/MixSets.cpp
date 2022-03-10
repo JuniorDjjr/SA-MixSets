@@ -35,7 +35,7 @@ class MixSets mixSets;
 MixSets::MixSets()
 {
 	lg.open("MixSets.log", fstream::out | fstream::trunc);
-	lg << "v4.3.5" << "\n";
+	lg << "v4.3.6" << "\n";
 	lg.flush();
 	 
 
@@ -577,14 +577,21 @@ void MixSets::ShowModMessages()
 		}
 		else
 		{
+			if (MixSets::bOutdatedDesiredLoadedVeh)
+			{
+				if (MixSets::lang == languages::PT)
+					CMessages::AddMessageJumpQ("~r~MixSets: 'DesiredLoadedVeh' (12) no arquivo MixSets.ini mudou para 'NumDesiredLoadedVeh' (22). Edite-o.", 15000, false, false);
+				else
+					CMessages::AddMessageJumpQ("~r~MixSets: 'DesiredLoadedVeh' (12) in the MixSets.ini file changed to 'NumDesiredLoadedVeh' (22). Edit it.", 15000, false, false);
+			}
 			if (MixSets::bReadOldINI)
 			{
 				if (MixSets::bErrorRename)
 				{
 					if (MixSets::lang == languages::PT)
-						CMessages::AddMessageJumpQ("~r~As configuracoes do 'MixSets old.ini' foram movidas, mas houve um erro ao renomea-lo. Leia o 'MixSets.log'.", 10000, false, false);
+						CMessages::AddMessageJumpQ("~r~As configuracoes do 'MixSets old.ini' foram movidas, mas houve um erro ao renomea-lo. Leia o 'MixSets.log'.", 12000, false, false);
 					else
-						CMessages::AddMessageJumpQ("~r~The 'MixSets old.ini' settings was moved, but there is an error when renaming it. Read the 'MixSets.log'.", 10000, false, false);
+						CMessages::AddMessageJumpQ("~r~The 'MixSets old.ini' settings was moved, but there is an error when renaming it. Read the 'MixSets.log'.", 12000, false, false);
 				}
 				else
 				{
@@ -593,16 +600,16 @@ void MixSets::ShowModMessages()
 						if (MixSets::numOldCfgNotFound > 1)
 						{
 							if (MixSets::lang == languages::PT)
-								CMessages::AddMessageJumpQWithNumber("~y~As configuracoes do 'MixSets old.ini' foram movidas. Ha ~1~ avisos, leia o 'MixSets.log'.", 8000, false, MixSets::numOldCfgNotFound, 0, 0, 0, 0, 0, false);
+								CMessages::AddMessageJumpQWithNumber("~y~As configuracoes do 'MixSets old.ini' foram movidas. Ha ~1~ avisos, leia o 'MixSets.log'.", 10000, false, MixSets::numOldCfgNotFound, 0, 0, 0, 0, 0, false);
 							else
-								CMessages::AddMessageJumpQWithNumber("~y~The 'MixSets old.ini' settings was moved. There is ~1~ warnings, read the 'MixSets.log'.", 8000, false, MixSets::numOldCfgNotFound, 0, 0, 0, 0, 0, false);
+								CMessages::AddMessageJumpQWithNumber("~y~The 'MixSets old.ini' settings was moved. There is ~1~ warnings, read the 'MixSets.log'.", 10000, false, MixSets::numOldCfgNotFound, 0, 0, 0, 0, 0, false);
 						}
 						else
 						{
 							if (MixSets::lang == languages::PT)
-								CMessages::AddMessageJumpQWithNumber("~y~As configuracoes do 'MixSets old.ini' foram movidas. Ha ~1~ aviso, leia o 'MixSets.log'.", 8000, false, MixSets::numOldCfgNotFound, 0, 0, 0, 0, 0, false);
+								CMessages::AddMessageJumpQWithNumber("~y~As configuracoes do 'MixSets old.ini' foram movidas. Ha ~1~ aviso, leia o 'MixSets.log'.", 10000, false, MixSets::numOldCfgNotFound, 0, 0, 0, 0, 0, false);
 							else
-								CMessages::AddMessageJumpQWithNumber("~y~The 'MixSets old.ini' settings was moved. There is ~1~ warning, read the 'MixSets.log'.", 8000, false, MixSets::numOldCfgNotFound, 0, 0, 0, 0, 0, false);
+								CMessages::AddMessageJumpQWithNumber("~y~The 'MixSets old.ini' settings was moved. There is ~1~ warning, read the 'MixSets.log'.", 10000, false, MixSets::numOldCfgNotFound, 0, 0, 0, 0, 0, false);
 						}
 					}
 					else
