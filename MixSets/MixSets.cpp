@@ -35,7 +35,7 @@ class MixSets mixSets;
 MixSets::MixSets()
 {
 	lg.open("MixSets.log", fstream::out | fstream::trunc);
-	lg << "v4.3.6" << "\n";
+	lg << "v4.3.7" << "\n";
 	lg.flush();
 	 
 
@@ -167,6 +167,17 @@ MixSets::MixSets()
 			//////////////////////////////////////////////
 
 			CPed* playerPed = FindPlayerPed(-1); // focused
+
+			if (G_BrakeReverseFix) {
+				int controlsMode = 1;
+				Command<COMMAND_GET_CONTROLLER_MODE>(&controlsMode);
+				if (controlsMode == 1) {
+					BrakeReverseFix_Pad1Brake = 0x00B73492; // iv controls
+				}
+				else {
+					BrakeReverseFix_Pad1Brake = 0x00B734A4; // vanilla
+				}
+			}
 
 			if (G_HideWeaponsOnVehicle)
 			{
@@ -300,6 +311,25 @@ MixSets::MixSets()
 				// sides
 				*(float*)0x8D3910 = 1.0f * balance;
 				*(float*)0x8D3918 = 1.0f * balance;
+			}
+
+			if (G_NoMinimapOnInteriors)
+			{
+				if (!bDrawRadarHooked)
+				{
+					if (ReadMemory<uint8_t>(0x58FC53, true) == 0xE8) // is call
+					{
+						ORIGINAL_DrawRadar = ReadMemory<uintptr_t>(0x58FC53 + 1, true);
+						ORIGINAL_DrawRadar += (GetGlobalAddress(0x58FC53) + 5);
+						injector::MakeInline<0x58FC53, 0x58FC53 + 5>([](injector::reg_pack& regs)
+						{
+							if (FindPlayerPed(-1)->m_nAreaCode == 0 || CTheScripts::IsPlayerOnAMission()) {
+								((void(__cdecl*)())MixSets::ORIGINAL_DrawRadar)();
+							}
+						});
+						bDrawRadarHooked = true;
+					}
+				}
 			}
 
 			if (!inSAMP && !bNoCLEO)
@@ -969,20 +999,22 @@ void __declspec(naked) BrakeReverseFix_ASM()
 		fnstsw ax
 		test   ah, 0x44
 		jp     do_stuff
-		mov    edx, 0x00B734A4
+		//0x00B734A4 for vanilla
+		//0x00B73492 for iv controls
+		mov    edx, MixSets::BrakeReverseFix_Pad1Brake
 		mov    eax, dword ptr[edx]
 		test   ax, ax
 		jne    dont_do_stuff
 
 		do_stuff :
 		mov    dword ptr[esi + 0x4A0], 0
-			pop    eax
-			mov    dword ptr[esi + 0x49C], eax
-			ret
-
-			dont_do_stuff :
 		pop    eax
-			ret
+		mov    dword ptr[esi + 0x49C], eax
+		ret
+
+		dont_do_stuff :
+		pop    eax
+		ret
 	}
 }
 

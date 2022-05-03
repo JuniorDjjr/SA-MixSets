@@ -19,11 +19,12 @@ public:
 
 	static inline DWORD RETURN_FixMouseStuck;
 	static inline DWORD altRETURN_FixMouseStuck;
+	static inline DWORD ORIGINAL_DrawRadar;
 
 
 	static inline bool forceUpdateQualityFuncs, bProcessOnceOnScripts, bProcessOnceAfterIntro,
 		bPlayerRenderWeaponInVehicleLastFrame, bPlayerTwoRenderWeaponInVehicleLastFrame, bNoCLEO,
-		bOnEmergencyMissionLastFrame;
+		bOnEmergencyMissionLastFrame, bDrawRadarHooked;
 	static inline int curQuality, lastQuality, G_NoEmergencyMisWanted_MaxWantedLevel, G_Backup_WavesRadius;
 	static inline languages lang;
 
@@ -32,7 +33,7 @@ public:
 	static inline bool bEnabled, bReadOldINI, bParsePreserveComments, bErrorRename, inSAMP, rpSAMP, dtSAMP, bIMFX, bIMFXgunflash, bGunFuncs, bOLA, bVehFuncs, bIniFailed, bVersionFailed, bOutdatedDesiredLoadedVeh,
 		G_NoDensities, G_FixBicycleImpact, G_NoStencilShadows, G_OpenedHouses, G_TaxiLights, G_ParaLandingFix, G_NoEmergencyMisWanted, G_SCMfixes,
 		G_NoGarageRadioChange, G_NoStuntReward, G_NoTutorials, G_EnableCensorship, G_HideWeaponsOnVehicle, bReloading, G_Fix2DGunflash, G_NoSamSite, G_LureRancher,
-		G_SmoothAimIK, G_StaticPedShadOnBike, G_TuningChoose2colors;
+		G_SmoothAimIK, G_StaticPedShadOnBike, G_TuningChoose2colors, G_NoMinimapOnInteriors, G_BrakeReverseFix;
 
 	static inline int G_i, G_FPSlimit, G_ProcessPriority, G_FreezeWeather, G_CameraPhotoQuality, G_UseHighPedShadows, G_StreamMemory, G_Anisotropic, G_HowManyMinsInDay;
 
@@ -56,6 +57,8 @@ public:
 	static inline VehFuncs_Ext_GetDoubleWheelOffset pVehFuncs_Ext_GetDoubleWheelOffset;
 
 	static inline DWORD _EAX;
+
+	static inline uintptr_t BrakeReverseFix_Pad1Brake = 0x00B734A4;
 
 	static inline uintptr_t ORIGINAL_MirrorsCreateBuffer;
 

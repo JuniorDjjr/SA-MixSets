@@ -1181,10 +1181,12 @@ void MixSets::ReadIni()
 	}
 	else G_EnableCensorship = false;
 
+	G_BrakeReverseFix = false;
 	if (ReadIniBool(ini, &lg, "Gameplay", "BrakeReverseFix")) {
 		injector::MakeCALL(0x006ADB80, BrakeReverseFix_ASM);
 		injector::MakeNOP(0x006ADB85);
 		injector::WriteMemory<uint32_t>(0x006ADB87, 0x8D, true);
+		G_BrakeReverseFix = true;
 	}
 
 	if (!inSAMP && ReadIniBool(ini, &lg, "Gameplay", "NoCheats")) {
@@ -2016,6 +2018,10 @@ void MixSets::ReadIni()
 		WriteMemory<uint8_t>(0x58A790, 255, true);
 		WriteMemory<uint8_t>(0x58A78E, 255, true);
 	}
+	if (ReadIniBool(ini, &lg, "Interface", "NoMinimapOnInteriors")) {
+		G_NoMinimapOnInteriors = true;
+	}
+	else G_NoMinimapOnInteriors = false;
 
 
 	// -- Audio
